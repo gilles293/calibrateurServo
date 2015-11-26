@@ -1,2 +1,2 @@
-# calibrateurServo
-machine à claibrer les servo pas cher
+﻿# calibrateurServo
+machine à calibrer les servos pas cher
