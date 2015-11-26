@@ -187,7 +187,13 @@ defineTask(reflechi)
              etatCalibrateur=14;
              Serial.println("la");
              
-//             compteurRef=compteur;
+
+             
+             break;
+        case 14: 
+             Serial.println("lalalal");
+             
+               compteurRef=compteur;
 //             objTest=leServo.getMilieu();
 //             while (compteur>compteurRef-3)
 //               {
@@ -200,9 +206,6 @@ defineTask(reflechi)
 //             leServo.setMax(objTest-DELTA);
 //             leServo.setObjectif(leServo.getMilieu());
              
-             break;
-        case 14: 
-             Serial.println("lalalal");
              
              break;
                   
