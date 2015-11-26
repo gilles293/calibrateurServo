@@ -180,9 +180,10 @@ defineTask(reflechi)
          
          case 13:
              Serial.println("ICI");
-             
-             //leServo.setObjectif(leServo.getMilieu()+DELTA);
-             leServo.setObjectif(1900);
+             compteur=0;
+             compteurRef=0;
+             leServo.setObjectif(leServo.getMilieu()+DELTA);
+            
              sleep(TEMPOSLEEP);
              etatCalibrateur=14;
              Serial.println("la");
