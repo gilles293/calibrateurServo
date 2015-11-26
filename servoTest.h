@@ -1,4 +1,7 @@
-/*
+/**
+#*******************************************************************************
+# Projet : VOR005
+# Sous projet : calibrateur de servo moteurs
  gilles
 */ 
  
