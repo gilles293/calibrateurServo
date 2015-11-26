@@ -184,7 +184,7 @@ defineTask(reflechi)
              //leServo.setObjectif(leServo.getMilieu()+DELTA);
              leServo.setObjectif(1900);
              sleep(TEMPOSLEEP);
-             
+             etatCalibrateur=14;
              Serial.println("la");
              
 //             compteurRef=compteur;
@@ -201,8 +201,10 @@ defineTask(reflechi)
 //             leServo.setObjectif(leServo.getMilieu());
              
              break;
-         
+        case 14: 
+             Serial.println("lalalal");
              
+             break;
                   
         case 2:
              if (leServo.isMin())
