@@ -1,3 +1,7 @@
+
+// A FAIRE : gérer les vitesse : les mettre à fond quand test usb les mettre plus bas pour les autres modes.
+
+
 #include <SCoop.h>
 #include <Wire.h>
 #include "bouton.h"
@@ -7,12 +11,16 @@
 #include <Adafruit_PWMServoDriver.h>
 #include <Servo.h>
 #define DELTA 150
-#define TEMPOSLEEP 1000
+#define TEMPOSLEEP 1000 //en ms le temps pour le servo de bouger d'un increment
+#define ERREURCOMPTAGE 3 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
+
 
 bouton boutonP(4);
 afficheur affichage(0x20);
-byte etatCalibrateur (11); //1= PC 2=Sweep 3=potar 4=Milieu Par défaut = 3 au démarage
+int bonnePositionPotence;
+byte etatCalibrateur (3); //1= PC 2=Sweep 3=potar 4=Milieu Par défaut = 3 au démarage
 unsigned long temp;
+unsigned long tempsMesureVitesse;
 potar lePotar(0);
 servoTest leServo(5); 
 servoTest potence(11);
@@ -20,6 +28,8 @@ unsigned long dateChangeServo;
 bool changeTypeServo(false);
 int compteur(0);
 int compteurRef(0);
+int resultatImpulsion[19];
+long resultatTemps[19];
 
 
 defineTimerRun(rafraichirAffichage,800) //ne pas mettre ce timer a une valeur trop faible pour éviter le rebond lors de l'apuui bouton (ne pas compter des apuis multiple pour un seul appuie voulu)   
@@ -136,8 +146,10 @@ defineTask(reflechi)
              if (boutonP.hasBeenDoubleClicked())
              {
                boutonP.acquit();
+               leServo.setVitesse(4000);
                Serial.println("tourner potar à fond à gauche");
                etatCalibrateur=11;
+               
               } 
            
              break;   
@@ -170,6 +182,7 @@ defineTask(reflechi)
            potence.setObjectif(map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax()));
            if (boutonP.hasBeenClicked())
             {
+              bonnePositionPotence=map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax());
               boutonP.acquit();
               etatCalibrateur=13;
               }
@@ -178,37 +191,154 @@ defineTask(reflechi)
            
              break;
          
-         case 13:
+         case 13: //mesure des impulsion de reference sur une rotation de delta
              Serial.println("ICI");
              compteur=0;
              compteurRef=0;
-             leServo.setObjectif(leServo.getMilieu()+DELTA);
+             objTest=leServo.getMilieu()+DELTA;
+             leServo.setObjectif(objTest);
             
              sleep(TEMPOSLEEP);
              etatCalibrateur=14;
              Serial.println("la");
-             
+             compteurRef=compteur;
+             if (compteurRef==0)
+               {
+                 Serial.println("PB : compteur Ref=0 aucune impulsion fourche optique détecté");
+                 Serial.println("retour au début de procédure");
+                 etatCalibrateur=1;
+               }
 
              
              break;
         case 14: 
              Serial.println("lalalal");
              
-               compteurRef=compteur;
-//             objTest=leServo.getMilieu();
-//             while (compteur>compteurRef-3)
-//               {
-//                 Serial.println("LA");
-//                 compteur=0;
-//                leServo.setObjectif(objTest+DELTA);
-//                 sleep(TEMPOSLEEP);
-//                 objTest=objTest+DELTA;
-//                 }
-//             leServo.setMax(objTest-DELTA);
-//             leServo.setObjectif(leServo.getMilieu());
+               
+             //sequence pour aller au max puis au min et de déterminer les pwm Min et Max du servo
+             while (compteur>compteurRef-ERREURCOMPTAGE)
+               {
+                 Serial.println("LAICI");
+                 compteur=0;
+                 objTest=objTest+DELTA;
+                 leServo.setObjectif(objTest);
+                 sleep(TEMPOSLEEP);
+                 
+                 }
+             leServo.setMax(objTest-DELTA);
+             leServo.setObjectif(leServo.getMilieu());
+             sleep(TEMPOSLEEP);
+             compteur=compteurRef;
+             
+             while (compteur>compteurRef-ERREURCOMPTAGE)
+               {
+                 Serial.println("LAICIlabas");
+                 compteur=0;
+                 objTest=objTest-DELTA;
+                 leServo.setObjectif(objTest);
+                 sleep(TEMPOSLEEP);
+                               
+                 
+                 }
+             leServo.setMin(objTest+DELTA);
+             leServo.setObjectif(objTest+DELTA);
+             
+             sleep(TEMPOSLEEP);
              
              
+       //séquence pour mesurer une vitesse et amplitude moyenne (10 cycle d'aller et retour et enregistrement systématique des mesures)
+            byte i;
+            
+             for (i=0;i<20;i++)
+             
+             {
+               compteur=0;
+             compteurRef=0;//compteur ref utilisé différement dans la suite
+               tempsMesureVitesse=millis();
+               leServo.setObjectif(leServo.getMax());
+               sleep(200);
+               while (compteur>compteurRef);
+                 {
+                   compteurRef=compteur;
+                   sleep(200);
+                   }
+               resultatImpulsion[i]=compteur;
+               resultatTemps[i]=millis()-tempsMesureVitesse-200;
+               
+                compteur=0;
+             compteurRef=0;
+               tempsMesureVitesse=millis();
+               leServo.setObjectif(leServo.getMin());
+               sleep(200);
+               while (compteur>compteurRef);
+                 {
+                   compteurRef=compteur;
+                   sleep(200);
+                   }
+               resultatImpulsion[i+1]=compteur;
+               resultatTemps[i+1]=millis()-tempsMesureVitesse-200;
+               
+               
+               }
+               
+  
+               
+              
+               
+               
+             Serial.println("ATTENTION regarder  et noter le sens de rotation du premier mouvement ");
+             Serial.println("si pret faire un clic ");
+              etatCalibrateur=15;
+              
+              
+              case 15:
+           if (boutonP.hasBeenClicked())
+                    {
+                      boutonP.acquit();
+                      etatCalibrateur=16;
+                      leServo.setObjectif(leServo.getMax());
+                      } 
+              
              break;
+             
+             
+             case 16: 
+               
+               Serial.println("Alors quelle sens de rotation ?" ); 
+               Serial.print(resultatImpulsion[5]);
+               Serial.print(" impulsions en ");
+               Serial.println(resultatTemps[5]);
+               Serial.println(" ms"); 
+               //
+               //
+               //
+               //
+                // a faire calculer moyenne des 2 tableau et calculer ecart type
+                //
+                ///
+                potence.setObjectif(potence.getMax());
+                Serial.println("si nouveau servo : doubleClic, si changement mode clic");
+                etatCalibrateur=17;               
+               break;
+               
+               case 17: 
+                if (boutonP.hasBeenClicked())
+                    {
+                      boutonP.acquit();
+                      etatCalibrateur=2;
+                      affichage.affiche(2);
+                      leServo.setObjectif(leServo.getMin());
+                      } 
+               if (boutonP.hasBeenDoubleClicked())
+                {
+                  boutonP.acquit();
+                  etatCalibrateur=13;
+                  leServo.setObjectif(leServo.getMilieu());
+                  potence.setObjectif(bonnePositionPotence);
+                  sleep(TEMPOSLEEP*3);
+                  }    
+                      
+                   break ;    
                   
         case 2:
              if (leServo.isMin())
