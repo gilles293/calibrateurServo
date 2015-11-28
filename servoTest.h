@@ -1,11 +1,15 @@
 /**
 #*******************************************************************************
-# Projet : VOR005
+# Projet : VOR-005
 # Sous projet : calibrateur de servo moteurs
 # Auteurs: Gille De Bussy
 # 
-# class afficheur:
-# gestion afficheur 7 segments au travers d'un PCF8574 en I2C
+# class servo:
+# permet de piloter les servo qui sont utilises sur le proet
+# servo en test mais aussi servo de la potence
+# utilise la librairie servo de chez Adafruit pour la carte
+Adafruit 16-Channel 12-bit PWM/Servo Driver - I2C interface - PCA9685
+PRODUCT ID: 815
 #*******************************************************************************
  J.Soranzo
 	26/11/2015 gestion sous git + github
@@ -25,32 +29,28 @@
 class servoTest
 {
   public:
-    servoTest(byte pin);
+    //contructor
+	servoTest(byte pin);
+	
+	//setters & getters
     bool getType();
     void setType(bool type);
     void setPotence();
     void setObjectif(int value);
+    int getObjectif();
+    int getVitesse();
+    void setVitesse(int vit); // en étendue de microsec ou pwm par seconde
     int getEnCours();
     int getMilieu();
-    
     void setMax(int val);
     void setMin(int val);
     int getMin();
     int getMax();
+	
+	//autres membres publics
     bool isMin();
     bool isMax();
-    int getObjectif();
-    int getVitesse();
-    void setVitesse(int vit); // en étendue de microsec ou pwm par seconde
     void appliqueObjectif(); // methode à activer régilierment pour s'approcher de l'objectif à la vitesse choisie
-    
-    
-    
-    
-    
-    
-    
-    
 
   private:
     void setEnCours(int val);
@@ -64,11 +64,6 @@ class servoTest
     int _vitesse;
     Servo _myServo;
     Adafruit_PWMServoDriver _carteAda;
-    
-    
-    
-    
-
     };
 
 #endif
