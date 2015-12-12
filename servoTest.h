@@ -53,7 +53,7 @@ class servoTest
     void appliqueObjectif(); // methode à activer régilierment pour s'approcher de l'objectif à la vitesse choisie
 
   private:
-    void setEnCours(int val);
+    void setEnCours(int val); // c'est cette methode qui deplace le servo
     byte _pin;
     byte _type; ///true=classique false=Adafruit
     int _enCours; // valeur en cours
@@ -64,6 +64,6 @@ class servoTest
     int _vitesse;
     Servo _myServo;
     Adafruit_PWMServoDriver _carteAda;
-    };
+};
 
 #endif
