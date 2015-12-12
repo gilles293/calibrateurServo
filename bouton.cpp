@@ -16,35 +16,15 @@ bouton::bouton(byte boutonPin)
     }
     
     
-bool bouton::hasBeenLongClicked()
-  {
-    
-    return _longClicked;
-    
-    
-    }
-    
-bool bouton::hasBeenClicked()
-  {
-    
-    return _clicked;
-    
-    
-    }
-    
-bool bouton::hasBeenDoubleClicked()
-  {
-    return _doubleClicked;
-    }  
-    
+bool bouton::hasBeenLongClicked(){ return _longClicked;  }
+bool bouton::hasBeenClicked(){ return _clicked; }
+bool bouton::hasBeenDoubleClicked(){ return _doubleClicked; }  
+  
 void bouton::acquit()
-
   {
     _doubleClicked=false;
     _clicked=false;
     _longClicked=false;
-    
-    
     }
     
 void bouton::refreshBouton()
@@ -53,7 +33,6 @@ void bouton::refreshBouton()
     
       {
         case 0:
-          
            //Serial.println("case0");
           if (digitalRead(_boutonPin)==LOW)
             {
@@ -73,14 +52,12 @@ void bouton::refreshBouton()
               break;
               }
               if (digitalRead(_boutonPin)==HIGH && millis()>=_debutDernierAppui+800)//detection clique long
-            {
-              
+            { 
               _etat=0;
               _longClicked=true;
               Serial.println("long clic");
               break;
-              }
-              
+              }  
               break;
               
          case 2:

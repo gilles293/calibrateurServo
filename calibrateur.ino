@@ -92,14 +92,14 @@ defineTask(reflechi)
               {
                 leServo.setType(false);
                 affichage.affiche(5);
-                Serial.println("servo de type Adafruit");
+                Serial.println(F("servo de type Adafruit"));
                 
                 }
            else
              {
                leServo.setType(true);
                affichage.affiche(6);
-               Serial.println("servo de type Classique");
+               Serial.println(F("servo de type Classique"));
                }
           //sleep( 3000);
           boutonP.acquit();
@@ -126,7 +126,7 @@ defineTask(reflechi)
           
           case 1:
              
-             Serial.println("Double Clic pour procéder à l'etlonnage");
+             Serial.println(F("Double Clic pour procéder à l'etlonnage"));
              etatCalibrateur=10;
              break;
              
@@ -147,7 +147,7 @@ defineTask(reflechi)
              {
                boutonP.acquit();
                leServo.setVitesse(4000);
-               Serial.println("tourner potar à fond à gauche");
+               Serial.println(F("tourner potar à fond à gauche"));
                etatCalibrateur=11;
                
               } 
@@ -160,7 +160,7 @@ defineTask(reflechi)
               if (lePotar.getValue()>1000)
              {
                etatCalibrateur=12;
-               Serial.println("quand potence reglé (sur le disque optique) faire 1 clic");
+               Serial.println(F("quand potence reglé (sur le disque optique) faire 1 clic"));
                               
               }   
                  
@@ -204,8 +204,8 @@ defineTask(reflechi)
              compteurRef=compteur;
              if (compteurRef==0)
                {
-                 Serial.println("PB : compteur Ref=0 aucune impulsion fourche optique détecté");
-                 Serial.println("retour au début de procédure");
+                 Serial.println(F("PB : compteur Ref=0 aucune impulsion fourche optique détecté"));
+                 Serial.println(F("retour au début de procédure"));
                  etatCalibrateur=1;
                }
 
@@ -232,7 +232,7 @@ defineTask(reflechi)
              
              while (compteur>compteurRef-ERREURCOMPTAGE)
                {
-                 Serial.println("LAICIlabas");
+                 Serial.println(F("LAICIlabas"));
                  compteur=0;
                  objTest=objTest-DELTA;
                  leServo.setObjectif(objTest);
@@ -281,18 +281,13 @@ defineTask(reflechi)
                
                }
                
-  
-               
-              
-               
-               
-             Serial.println("ATTENTION regarder  et noter le sens de rotation du premier mouvement ");
-             Serial.println("si pret faire un clic ");
-              etatCalibrateur=15;
+             Serial.println(F("ATTENTION regarder  et noter le sens de rotation du premier mouvement "));
+             Serial.println(F("si pret faire un clic "));
+             etatCalibrateur=15;
               
               
               case 15:
-           if (boutonP.hasBeenClicked())
+                if (boutonP.hasBeenClicked())
                     {
                       boutonP.acquit();
                       etatCalibrateur=16;
@@ -304,11 +299,11 @@ defineTask(reflechi)
              
              case 16: 
                
-               Serial.println("Alors quelle sens de rotation ?" ); 
+               Serial.println(F("Alors quelle sens de rotation ?") ); 
                Serial.print(resultatImpulsion[5]);
-               Serial.print(" impulsions en ");
+               Serial.print(F(" impulsions en "));
                Serial.println(resultatTemps[5]);
-               Serial.println(" ms"); 
+               Serial.println(F(" ms")); 
                //
                //
                //
@@ -317,7 +312,7 @@ defineTask(reflechi)
                 //
                 ///
                 potence.setObjectif(potence.getMax());
-                Serial.println("si nouveau servo : doubleClic, si changement mode clic");
+                Serial.println(F("si nouveau servo : doubleClic, si changement mode clic"));
                 etatCalibrateur=17;               
                break;
                

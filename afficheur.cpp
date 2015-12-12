@@ -94,7 +94,7 @@ void afficheur::affiche(byte toto)
     {
     case AFFICHERIEN : // affiche rien
         _affichageEnCours[0]=0xFF;
-       Serial.println("Rien"); 
+       Serial.println(F("Rien")); 
         _numMax =0;       
         break;
         
@@ -103,7 +103,7 @@ void afficheur::affiche(byte toto)
         _affichageEnCours[1]=0xA4;//
         _affichageEnCours[2]=0x8C;//
         
-       Serial.println("USB"); 
+       Serial.println(F("USB")); 
          
         _numMax =2;       
         break;
@@ -114,7 +114,7 @@ void afficheur::affiche(byte toto)
         _affichageEnCours[2]=0x86;
         _affichageEnCours[3]=0x86;
         _affichageEnCours[4]=0xC2; 
-       Serial.println("SWEEP"); 
+       Serial.println(F("SWEEP")); 
         _numMax =4;       
         break;
      
