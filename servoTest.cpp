@@ -35,7 +35,8 @@ int servoTest::getMax()     { return _max;      }
 // les setteurs
 void servoTest::setMax(int val)      { _max=val;      }
 void servoTest::setMin(int val)      { _min=val;      }
-void servoTest::setObjectif(int val) { _objectif=val; }  
+void servoTest::setObjectif(int val) { _objectif=val; }
+void servoTest::setVitesse(int val)  { _vitesse=val;  } 
 
 //autres méthodes
 bool servoTest::isMin()         { return(_enCours==_min); } 
@@ -68,7 +69,6 @@ void servoTest::setType(bool type)
 			_carteAda.setPWMFreq(50); 
 		}
 }
-
     
 void servoTest::setPotence()
   {
@@ -102,20 +102,7 @@ void servoTest::setEnCours(int val)
 				}
 		}
 }
- 
- 
 
- 
-  void servoTest::setVitesse(int val)
-  {
-    
-
-    _vitesse=val;
-    
- 
-    
-    } 
- 
 void servoTest::appliqueObjectif()
 {
    float pas(0);
