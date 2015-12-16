@@ -81,7 +81,8 @@ void servoTest::setPotence()
 	_objectif=_milieu;
 	_myServo.attach(_pin); 
 }  
-    
+
+// C'est reellement cette methode qui provoque les deplacement du servomoteur    
 void servoTest::setEnCours(int val)
 {  
 //   Serial.print(" val=");
