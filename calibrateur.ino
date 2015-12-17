@@ -30,21 +30,25 @@ void updatePulseCompteur(){
 void setup()
 {
 	Serial.begin(9600);
-	Serial.println(F("Test fourche optique"));
+	Serial.println(F("Test fourche optique 2000"));
 	serv.attach(SERVOPIN);
     attachInterrupt(CAPTEURINTERRUPNUMBER, updatePulseCompteur, CHANGE );
 }
 
 void loop()
 {
-  for (int pos = 10; pos <= 170; pos += 1) { // goes from 0 degrees to 180 degrees
-    // in steps of 1 degree
-    serv.write(pos);              // tell servo to go to position in variable 'pos'
-    delay(10);                       // waits 15ms for the servo to reach the position
-  }
-  for (int pos = 170; pos >= 10; pos -= 1) { // goes from 180 degrees to 0 degrees
-    serv.write(pos);              // tell servo to go to position in variable 'pos'
-    delay(10);                       // waits 15ms for the servo to reach the position
-  }
+//  for (int pos = 10; pos <= 170; pos += 1) { // goes from 0 degrees to 180 degrees
+//    // in steps of 1 degree
+//    serv.write(pos);              // tell servo to go to position in variable 'pos'
+//    delay(10);                       // waits 15ms for the servo to reach the position
+//  }
+//  for (int pos = 170; pos >= 10; pos -= 1) { // goes from 180 degrees to 0 degrees
+//    serv.write(pos);              // tell servo to go to position in variable 'pos'
+//    delay(10);                       // waits 15ms for the servo to reach the position
+//  }
+    serv.write(175);              // tell servo to go to position in variable 'pos'
+    delay(2000);
+    serv.write(5);              // tell servo to go to position in variable 'pos'
+    delay(1500);
 
 }

@@ -651,18 +651,10 @@
 		<Compiler>
 			<Add directory="." />
 		</Compiler>
-		<Unit filename="afficheur.cpp" />
-		<Unit filename="afficheur.h" />
-		<Unit filename="bouton.cpp" />
-		<Unit filename="bouton.h" />
 		<Unit filename="calibrateur.ino">
 			<Option compile="1" />
 			<Option link="1" />
 		</Unit>
-		<Unit filename="potar.cpp" />
-		<Unit filename="potar.h" />
-		<Unit filename="servoTest.cpp" />
-		<Unit filename="servoTest.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
