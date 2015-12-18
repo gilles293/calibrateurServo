@@ -46,8 +46,26 @@ int compteurRef(0);
 int resultatImpulsion[19];
 long resultatTemps[19];
 
+enum {
+		POTAR = 3,
+		MILIEU = 4,
+		USB = 1,
+		ETALORSWEEP = 10,
+		REGPOTENCINVIT = 11,
+		REGLPOTENC = 12,
+		MESREFPULSE = 13,
+		FINDMINMAX = 14,
+		WAITCLIC = 15,
+		DISPRESULT = 16,
+		WAITCLIC2 = 17,
+		SWEEPTOMIN = 2,
+		SWEPPTOMAX = 20
+};
 
-defineTimerRun(rafraichirAffichage,800) //ne pas mettre ce timer a une valeur trop faible pour éviter le rebond lors de l'apuui bouton (ne pas compter des apuis multiple pour un seul appuie voulu)   
+
+defineTimerRun(rafraichirAffichage,800)
+ //ne pas mettre ce timer a une valeur trop faible pour éviter le rebond
+ //lors de l'apuui bouton (ne pas compter des apuis multiple pour un seul appuie voulu)   
 {  
 	 //Serial.println("affichagePP");
 	  affichage.refreshAfficheur();
@@ -56,11 +74,10 @@ defineTimerRun(rafraichirAffichage,800) //ne pas mettre ce timer a une valeur tr
 defineTimerRun(surveilleBouton,40)
 //ne pas mettre ce timer a une valeur trop faible pour éviter le rebond lors de
 //l'apuui bouton (ne pas compter des apuis multiple pour un seul appuie voulu)   
-        {  
-         //Serial.println("bouton");
-          boutonP.refreshBouton();
-         
-          }
+{  
+	//Serial.println("bouton");
+	boutonP.refreshBouton();
+}
 
 defineTimerRun(surveilleServo,100) //conserver 100 ou modifier le "*0.1" dans méthode appliqueobjectif du Servo
 {  
@@ -78,9 +95,9 @@ defineTimerRun(surveillePotar,80)
 
 defineTask(reflechi)
     void reflechi::setup()
-       {
+	{
 
-        }
+	}
     
     void reflechi::loop()
     //defineTimerRun(reflechi,40)
@@ -115,12 +132,12 @@ defineTask(reflechi)
 		int objTest (0);
 		switch (etatCalibrateur)
 			{
-				case 1:
+				case USB :
 					Serial.println(F("Double Clic pour procéder à l'etlonnage"));
 					etatCalibrateur=10;
 					break;
 
-				case 10:
+				case ETALORSWEEP :
 					if (boutonP.hasBeenClicked())
 						{
 							boutonP.acquit();
@@ -138,7 +155,7 @@ defineTask(reflechi)
 					} 
 					break;   
 
-				case 11:
+				case REGPOTENCINVIT :
 					leServo.setObjectif(leServo.getMilieu());
 					// pour etre certain qu'on aprt du milieu et que le servo 
 					//n'est pas n'importe ou suite à des manip de type sweep
@@ -150,7 +167,7 @@ defineTask(reflechi)
 					}   
 					break;   
 
-				case 12 :
+				case REGLPOTENC :
 					// Serial.print("obj potence=");
 					// Serial.print(potence.getObjectif());
 					// Serial.print("   Encours potence=");
@@ -167,7 +184,7 @@ defineTask(reflechi)
 						}
 					break;
 			 
-				case 13: //mesure des impulsion de reference sur une rotation de delta
+				case MESREFPULSE: //mesure des impulsion de reference sur une rotation de delta
 					Serial.println("ICI");
 					compteur=0;
 					compteurRef=0;
@@ -185,7 +202,7 @@ defineTask(reflechi)
 							etatCalibrateur=1;
 						}
 					break;
-				case 14: 
+				case FINDMINMAX: 
 					Serial.println("lalalal");
 					//sequence pour aller au max puis au min et de déterminer les pwm Min et Max du servo
 					while (compteur>compteurRef-ERREURCOMPTAGE)
@@ -247,7 +264,7 @@ defineTask(reflechi)
 					etatCalibrateur=15;
 				  
 				  
-				case 15:
+				case WAITCLIC:
 					if (boutonP.hasBeenClicked())
 						{
 							boutonP.acquit();
@@ -256,7 +273,7 @@ defineTask(reflechi)
 						} 
 					break;
 
-				case 16: 
+				case DISPRESULT: 
 					Serial.println(F("Alors quelle sens de rotation ?") ); 
 					Serial.print(resultatImpulsion[5]);
 					Serial.print(F(" impulsions en "));
@@ -274,7 +291,7 @@ defineTask(reflechi)
 					etatCalibrateur=17;               
 					break;
 				   
-				case 17: 
+				case WAITCLIC2: 
 					if (boutonP.hasBeenClicked())
 						{
 							boutonP.acquit();
@@ -292,7 +309,7 @@ defineTask(reflechi)
 						}    
 					break ;    
 					  
-				case 2:
+				case SWEEPTOMIN:
 					if (leServo.isMin())
 						{
 							etatCalibrateur=20;
@@ -307,7 +324,7 @@ defineTask(reflechi)
 						}
 					break;
 		
-				case 20:
+				case SWEPPTOMAX:
 					if (leServo.isMax())
 						{
 							etatCalibrateur=2;
@@ -322,7 +339,7 @@ defineTask(reflechi)
 						}
 					break;
 
-				case 3:
+				case POTAR:
 					int temp;
 					int potarVal;
 					potarVal=lePotar.getValue();
@@ -350,7 +367,7 @@ defineTask(reflechi)
 						}
 					break;
 		
-				case 4:
+				case MILIEU:
 					leServo.setObjectif(leServo.getMilieu());
 					if (boutonP.hasBeenClicked())
 						{
@@ -372,62 +389,31 @@ defineTask(reflechi)
 
           
 void setup() 
-   {     
-     Serial.begin(57600);
-     potence.setPotence(); 
-     leServo.setType(true); 
-     Wire.begin();
-    
-    Serial.println("hello");
-    mySCoop.start();
-   temp=millis();
-   //etatCalibrateur=3; fait dans l'init de la variable
-   affichage.affiche(3);
-   attachInterrupt(0, updatePulseCompteur, CHANGE ); // Int0= la pin N°2 sur un UNO
-   
-     
-     }
+{     
+	Serial.begin(57600);
+	potence.setPotence(); 
+	leServo.setType(true); 
+	Wire.begin();
+
+	Serial.println("hello");
+	mySCoop.start();
+	temp=millis();
+	//etatCalibrateur=3; fait dans l'init de la variable
+	affichage.affiche(3);
+	attachInterrupt(0, updatePulseCompteur, CHANGE ); // Int0= la pin N°2 sur un UNO
+}
  void updatePulseCompteur()
-    { 
-      compteur++;       
-    }     
+{ 
+	compteur++;       
+}     
          
- void loop ()
- 
-   {
-     mySCoop.sleep(1);
-    
-//    if (boutonP.hasBeenClicked()==true)
-//      {
-//        Serial.println("clic ");
-//        boutonP.acquit();
-//        
-//        }
-//   if (boutonP.hasBeenDoubleClicked()==true)
-//      {
-//        Serial.println("DoubleClic ");
-//        boutonP.acquit();
-//        
-//        }    
-//        
-//    if (boutonP.hasBeenLongClicked()==true)
-//      {
-//        Serial.println("Long Clic ");
-//        boutonP.acquit();
-//        
-//        }  
-    
-    
-    if (millis()>2000+temp)
-         {
-         
-         //Serial.print("valeur potar : ");
-         //Serial.println(lePotar.getValue());
-         temp=millis();
-         
-         //Serial.print("Etat : ");
-    //Serial.println(etatCalibrateur);
-         }
-         
-     }
+void loop ()
+{
+	mySCoop.sleep(1);
+	if (millis()>2000+temp)
+		{
+			temp=millis();
+		}
+
+}
 
