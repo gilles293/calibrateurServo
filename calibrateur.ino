@@ -21,6 +21,8 @@
 
 Servo serv;
 
+boolean switchServo = false;
+boolean switchMiddle = false;
 int compteur(0);
 
 void updatePulseCompteur(){
@@ -31,9 +33,20 @@ void setup()
 {
 	Serial.begin(9600);
 	Serial.println(F("Test fourche optique 2000"));
+	Serial.println("enter pour démarrer la mesure et le servo");
 	serv.attach(SERVOPIN);
     attachInterrupt(CAPTEURINTERRUPNUMBER, updatePulseCompteur, CHANGE );
 }
+
+void serialEvent(){
+    while (Serial.available()) {
+        Serial.read();
+    }
+    switchServo = !switchServo;
+
+
+}
+
 
 void loop()
 {
@@ -46,9 +59,15 @@ void loop()
 //    serv.write(pos);              // tell servo to go to position in variable 'pos'
 //    delay(10);                       // waits 15ms for the servo to reach the position
 //  }
-    serv.write(175);              // tell servo to go to position in variable 'pos'
-    delay(2000);
-    serv.write(5);              // tell servo to go to position in variable 'pos'
-    delay(1500);
+    if (switchServo){
+        serv.write(175);              // tell servo to go to position in variable 'pos'
+        delay(1500);
+        serv.write(10);              // tell servo to go to position in variable 'pos'
+        delay(1500);
+        switchMiddle = true;
+    } else if (switchMiddle){
+        switchMiddle = false;
+        serv.write(90);
+    }
 
 }
