@@ -7,6 +7,7 @@
 # Program principal:
 
 // A FAIRE : gérer les vitesse : les mettre à fond quand test usb les mettre plus bas pour les autres modes.
+// A FAIRE : au démarage de l'arduino initialiser les valeurs potence loin de disque optique.
 
 #*******************************************************************************
  J.Soranzo
@@ -134,7 +135,7 @@ defineTask(reflechi)
 			{
 				case USB :
 					Serial.println(F("Double Clic pour procéder à l'etlonnage"));
-					etatCalibrateur=10;
+					etatCalibrateur=ETALORSWEEP;
 					break;
 
 				case ETALORSWEEP :
@@ -151,7 +152,7 @@ defineTask(reflechi)
 						boutonP.acquit();
 						leServo.setVitesse(4000);
 						Serial.println(F("tourner potar à fond à gauche"));
-						etatCalibrateur=11;
+						etatCalibrateur=REGPOTENCINVIT;
 					} 
 					break;   
 
@@ -162,7 +163,7 @@ defineTask(reflechi)
 					//ou potar par ex
 					if (lePotar.getValue()>1000)
 					{
-						etatCalibrateur=12;
+						etatCalibrateur=REGLPOTENC;
 						Serial.println(F("quand potence reglé (sur le disque optique) faire 1 clic"));
 					}   
 					break;   
@@ -180,7 +181,7 @@ defineTask(reflechi)
 						{
 							bonnePositionPotence=map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax());
 							boutonP.acquit();
-							etatCalibrateur=13;
+							etatCalibrateur=MESREFPULSE;
 						}
 					break;
 			 
@@ -188,11 +189,24 @@ defineTask(reflechi)
 					Serial.println("ICI");
 					compteur=0;
 					compteurRef=0;
+                                        Serial.print("En Cours=");
+                                        Serial.print(leServo.getEnCours());
+                                        Serial.print(" Objectif =");
+                                        Serial.println(leServo.getObjectif());
 					objTest=leServo.getMilieu()+DELTA;
 					leServo.setObjectif(objTest);
-
+                                        Serial.println("Envoi incrément Servo");
+                                        Serial.println("En Cours=");
+                                        Serial.print(leServo.getEnCours());
+                                        Serial.print(" Objectif =");
+                                        Serial.println(leServo.getObjectif());
 					sleep(TEMPOSLEEP);
-					etatCalibrateur=14;
+                                        Serial.println("Fin attente");
+                                        Serial.println("En Cours=");
+                                        Serial.print(leServo.getEnCours());
+                                        Serial.print(" Objectif =");
+                                        Serial.println(leServo.getObjectif());
+					etatCalibrateur=FINDMINMAX;
 					Serial.println("la");
 					compteurRef=compteur;
 					if (compteurRef==0)
