@@ -51,7 +51,7 @@ void servoTest::setType(bool type)
 			_min=1000;   //1000
 			_max=2000; //2000
 			_milieu=(_min+_max)/2;
-			_vitesse=300; //JSO : reolution de conflit 3000 to 300
+			_vitesse=300; //300 par defaut JSO : reolution de conflit 3000 to 300
 			_enCours=_milieu+1;
 			_objectif=_milieu; 
 			_myServo.attach(_pin);       
@@ -77,8 +77,8 @@ void servoTest::setPotence()
 	_max=2000; //2000
 	_milieu=(_min+_max)/2;
 	_vitesse=3000;
-	_enCours=_milieu+1;
-	_objectif=_milieu;
+	_enCours=_max-1;
+	_objectif=_max;
 	_myServo.attach(_pin); 
 }  
 
