@@ -31,7 +31,7 @@
 #define ERREURCOMPTAGE 3 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 5 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation
 #define TEMPO_STAT 200 // tempo pour laisser le servo avancr lors des mesures statistique à la fin de la calibration
-
+#define NBR_CYCLE_MESUREREF 4 //nombre de mesure pour la valeur de reference àau début de la procédure de calibration en USB
 
 enum {
 		POTAR = 3,
@@ -64,7 +64,7 @@ int compteurRef(0);
 int resultatImpulsion[NBRCYCLE_AR*2];
 long resultatTemps[NBRCYCLE_AR*2];
 int objTest (0); // varaible temporaire pour ...peut sans doute etre supprimé en faisant apelle aux bnnes méthode pour connaitre etat courrant du servo
-
+int verifMesureRef[NBR_CYCLE_MESUREREF+1]; //indice 0= somme ou moyenne des autres valeurs du tableau, indice 1 à 4 valeur de mesure de ref sur chaque run de mesure de ref
 
 
 
@@ -193,33 +193,59 @@ defineTask(reflechi)
 			 
 				case MESREFPULSE: //mesure des impulsion de reference sur une rotation de delta
 					Serial.println("ICI");
-					compteur=0;
-					compteurRef=0;
-//                                        Serial.print("En Cours=");
-//                                        Serial.print(leServo.getEnCours());
-//                                        Serial.print(" Objectif =");
-//                                        Serial.println(leServo.getObjectif());
-					//objTest=leServo.getMilieu()+DELTA;
-					leServo.setObjectif(leServo.getMilieu()+DELTA);
-//                                        Serial.println("Envoi incrément Servo");
-//                                        Serial.println("En Cours=");
-//                                        Serial.print(leServo.getEnCours());
-//                                        Serial.print(" Objectif =");
-//                                        Serial.println(leServo.getObjectif());
-					sleep(TEMPOSLEEP);
-//                                        Serial.println("Fin attente");
-//                                        Serial.println("En Cours=");
-//                                        Serial.print(leServo.getEnCours());
-//                                        Serial.print(" Objectif =");
-//                                        Serial.println(leServo.getObjectif());
-					etatCalibrateur=FINDMINMAX;
+					
+					byte k;
+                                        verifMesureRef[0]=0;
+                                        compteurRef=0;
+                                        Serial.print(" NBR_CYCLE_MESURE REF =");
+                                        Serial.println(NBR_CYCLE_MESUREREF);
+                                        for (k=1;k<=NBR_CYCLE_MESUREREF;k++)
+                                              {compteur=0;
+                                              Serial.print("k=");
+                                              Serial.print(k);
+    //                                        Serial.print(" Objectif =");
+    //                                        Serial.println(leServo.getObjectif());
+        				      //objTest=leServo.getMilieu()+DELTA;
+        				      leServo.setObjectif(leServo.getMilieu()+DELTA);
+    //                                        Serial.println("Envoi incrément Servo");
+    //                                        Serial.println("En Cours=");
+    //                                        Serial.print(leServo.getEnCours());
+    //                                        Serial.print(" Objectif =");
+    //                                        Serial.println(leServo.getObjectif());
+    					      sleep(TEMPOSLEEP);
+    //                                        Serial.println("Fin attente");
+    //                                        Serial.println("En Cours=");
+    //                                        Serial.print(leServo.getEnCours());
+    //                                        Serial.print(" Objectif =");
+    //                                        Serial.println(leServo.getObjectif());
+    					      verifMesureRef[k]=compteur;
+                                              verifMesureRef[0]=verifMesureRef[0]+1;
+                                              leServo.setObjectif(leServo.getMilieu());
+                                              sleep(TEMPOSLEEP);
+                                              Serial.print("compteur=");
+                                              Serial.print(compteur);
+                                              }
+                                        
+
+                                        etatCalibrateur=FINDMINMAX;
 					//Serial.println("la");
-					compteurRef=compteur;
+					
+                                        for (k=1;k<=NBR_CYCLE_MESUREREF;k++)
+                                            {
+                                              verifMesureRef[0]=verifMesureRef[0]+verifMesureRef[k];
+                                              
+                                              
+                                              }
+                                        verifMesureRef[0]=verifMesureRef[0]/NBR_CYCLE_MESUREREF;      
+                                        compteurRef=verifMesureRef[0];
                                         Serial.print(" SUPERcmpteurRef=");
                                         Serial.println(compteurRef);
 //                                        Serial.print(" OBJTEST=");
 //                                        Serial.println(leServo.getObjectif());
 					
+
+
+
 					if (compteurRef==0)
 						{
 							Serial.println(F("PB : compteur Ref=0 aucune impulsion fourche optique détecté"));
