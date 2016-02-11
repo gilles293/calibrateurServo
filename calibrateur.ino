@@ -8,6 +8,7 @@
 
 // A FAIRE : gérer les vitesse : les mettre à fond quand test usb les mettre plus bas pour les autres modes.
 // A FAIRE : au démarage de l'arduino initialiser les valeurs potence loin de disque optique.
+// enregistrer la potente en EEPROM
 
 #*******************************************************************************
  J.Soranzo
