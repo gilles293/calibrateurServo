@@ -200,9 +200,11 @@ defineTask(reflechi)
                                         Serial.print(" NBR_CYCLE_MESURE REF =");
                                         Serial.println(NBR_CYCLE_MESUREREF);
                                         for (k=1;k<=NBR_CYCLE_MESUREREF;k++)
-                                              {compteur=0;
-                                              Serial.print("k=");
-                                              Serial.print(k);
+                                              {
+                                              leServo.setObjectif(leServo.getMilieu());
+                                              sleep(TEMPOSLEEP);
+                                              compteur=0;
+                                              
     //                                        Serial.print(" Objectif =");
     //                                        Serial.println(leServo.getObjectif());
         				      //objTest=leServo.getMilieu()+DELTA;
@@ -219,11 +221,15 @@ defineTask(reflechi)
     //                                        Serial.print(" Objectif =");
     //                                        Serial.println(leServo.getObjectif());
     					      verifMesureRef[k]=compteur;
-                                              verifMesureRef[0]=verifMesureRef[0]+1;
-                                              leServo.setObjectif(leServo.getMilieu());
-                                              sleep(TEMPOSLEEP);
-                                              Serial.print("compteur=");
+                                              
+                                              
+                                              Serial.print("compteur ");
                                               Serial.print(compteur);
+                                              Serial.print(" k ");
+                                              Serial.print(k);
+                                              Serial.print("verifMesureRef ");
+                                              Serial.println(verifMesureRef[k]);
+                                              
                                               }
                                         
 
@@ -232,11 +238,19 @@ defineTask(reflechi)
 					
                                         for (k=1;k<=NBR_CYCLE_MESUREREF;k++)
                                             {
+                                              Serial.print(" k et verifMesureRef[0]=");
+                                              Serial.print(k);
+                                              Serial.print("  ");
+                                              Serial.println(verifMesureRef[0]);
                                               verifMesureRef[0]=verifMesureRef[0]+verifMesureRef[k];
                                               
                                               
                                               }
-                                        verifMesureRef[0]=verifMesureRef[0]/NBR_CYCLE_MESUREREF;      
+                                        Serial.print(" Somme verifMesureRef[0]=");
+                                        Serial.println(verifMesureRef[0]); 
+                                        Serial.print(" NBR_CYCLE_MESUREREF=");
+                                        Serial.println(NBR_CYCLE_MESUREREF); 
+                                        verifMesureRef[0]=verifMesureRef[0]/(NBR_CYCLE_MESUREREF);      
                                         compteurRef=verifMesureRef[0];
                                         Serial.print(" SUPERcmpteurRef=");
                                         Serial.println(compteurRef);
@@ -264,7 +278,10 @@ defineTask(reflechi)
 				case FINDMINMAX: 
 					//Serial.println("lalalal");
 					//sequence pour aller au max puis au min et de déterminer les pwm Min et Max du servo
-					while (compteur>compteurRef-ERREURCOMPTAGE && compteur<compteurRef+ERREURCOMPTAGE)
+                                        compteur=compteurRef;
+                                        Serial.print(" compteur pour aller vers max =");
+                                        Serial.println(compteur);
+					while (compteur>=compteurRef-ERREURCOMPTAGE && compteur<=compteurRef+ERREURCOMPTAGE)
 						{
 							Serial.print("M+.....");
 //                                                        Serial.print(" ObjTest=");
@@ -289,7 +306,7 @@ defineTask(reflechi)
                                         Serial.println("retourneMilieu");
 					sleep(TEMPOSLEEP);
 					compteur=compteurRef;
-					while (compteur>compteurRef-ERREURCOMPTAGE && compteur<compteurRef+ERREURCOMPTAGE  )
+					while (compteur>=compteurRef-ERREURCOMPTAGE && compteur<=compteurRef+ERREURCOMPTAGE  )
 						{
 							Serial.print(F("M-......"));
 							compteur=0;
