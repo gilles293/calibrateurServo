@@ -18,7 +18,7 @@
 */ 
 
 
-
+#include <EEPROM.h>
 #include <SCoop.h>
 #include <Wire.h>
 #include "bouton.h"
@@ -29,10 +29,10 @@
 #include <Servo.h>
 #define DELTA 150
 #define TEMPOSLEEP 1000 //en ms le temps pour le servo de bouger d'un increment quand on fait les mesure à la roue codeuse
-#define ERREURCOMPTAGE 3 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
+#define ERREURCOMPTAGE 7 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 5 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation
 #define TEMPO_STAT 200 // tempo pour laisser le servo avancr lors des mesures statistique à la fin de la calibration
-
+#define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de l potence est stocké
 
 enum {
 		POTAR = 3,
@@ -46,6 +46,7 @@ enum {
 		WAITCLIC = 15,
 		DISPRESULT = 16,
 		WAITCLIC2 = 17,
+                LECTURE_OU_ECRITURE_EEEPROM=18,
 		SWEEPTOMIN = 2,
 		SWEPPTOMAX = 20
 };
@@ -141,7 +142,8 @@ defineTask(reflechi)
 				case USB :
 					
                                         
-                                        Serial.println(F("Double Clic pour procéder à l'etlonnage"));
+                                        Serial.println(F("Double Clic pour procéder à mesure via USB, sinon simple clic change de mode"));
+                                        
 					etatCalibrateur=ETALORSWEEP;
 					break;
 
@@ -158,12 +160,33 @@ defineTask(reflechi)
 					{
 						boutonP.acquit();
 						leServo.setVitesse(4000);
-						Serial.println(F("tourner potar à fond à gauche"));
-						etatCalibrateur=REGPOTENCINVIT;
+						Serial.println(F("si lecture EEPROM pour potence Simple clic, si reglage potence double clic"));
+						etatCalibrateur=LECTURE_OU_ECRITURE_EEEPROM;
 					} 
 					break;   
 
-				case REGPOTENCINVIT :
+				case LECTURE_OU_ECRITURE_EEEPROM :
+					if (boutonP.hasBeenClicked())
+						{
+							boutonP.acquit();
+							EEPROM.get(ADRESSE_EEPROM, bonnePositionPotence); //lire la prom
+                                                        Serial.println("j'ai lu");
+                                                        Serial.println(bonnePositionPotence);
+                                                        potence.setObjectif(bonnePositionPotence);
+                                                        etatCalibrateur=MESREFPULSE;
+						}
+				 
+					if (boutonP.hasBeenDoubleClicked())
+					{
+						boutonP.acquit();
+						
+						Serial.println(F("tourner potar à fond à gauche"));
+						etatCalibrateur=REGPOTENCINVIT;
+					} 
+					break;
+
+          
+                                case REGPOTENCINVIT :
 					leServo.setObjectif(leServo.getMilieu());
 					// pour etre certain qu'on aprt du milieu et que le servo 
 					//n'est pas n'importe ou suite à des manip de type sweep
@@ -188,6 +211,8 @@ defineTask(reflechi)
 						{
 							bonnePositionPotence=map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax());
 							boutonP.acquit();
+                                                        EEPROM.put(ADRESSE_EEPROM, bonnePositionPotence);//enregistre en eeprom
+                                                        Serial.println("sauver en prom");
 							etatCalibrateur=MESREFPULSE;
 						}
 					break;
