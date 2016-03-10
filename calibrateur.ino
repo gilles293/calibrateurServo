@@ -17,6 +17,8 @@
 	nettoyage du code, j'ai craqué
 */ 
 
+//pour la suite faire moyenne pour mesure PWMIN et PWMMAX et virer le calcul de la moyenne mesureimpulsion pour le remplacer par la méthode
+
 
 #include <EEPROM.h>
 #include <SCoop.h>
