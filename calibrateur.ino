@@ -30,7 +30,7 @@
 #define DELTA 150
 #define TEMPOSLEEP 1000 //en ms le temps pour le servo de bouger d'un increment quand on fait les mesure à la roue codeuse
 #define ERREURCOMPTAGE 7 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
-#define NBRCYCLE_AR 5 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation
+#define NBRCYCLE_AR 5 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
 #define TEMPO_STAT 200 // tempo pour laisser le servo avancr lors des mesures statistique à la fin de la calibration
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de l potence est stocké
 
@@ -46,7 +46,7 @@ enum {
 		WAITCLIC = 15,
 		DISPRESULT = 16,
 		WAITCLIC2 = 17,
-                LECTURE_OU_ECRITURE_EEEPROM=18,
+    LECTURE_OU_ECRITURE_EEEPROM=18,
 		SWEEPTOMIN = 2,
 		SWEPPTOMAX = 20
 };
@@ -65,9 +65,25 @@ int compteur(0);
 int compteurRef(0);
 int resultatImpulsion[NBRCYCLE_AR*2];
 long resultatTemps[NBRCYCLE_AR*2];
+int mesureRef[NBRCYCLE_AR];
+int PWMMin[NBRCYCLE_AR];
+int PWMMax[NBRCYCLE_AR];
+
+
 int objTest (0); // varaible temporaire pour ...peut sans doute etre supprimé en faisant apelle aux bnnes méthode pour connaitre etat courrant du servo
 
+int moyenne (int tailleTab, int tab [])
 
+{
+  byte j;
+  long moyenne (0);
+  for (j=0;j<tailleTab;j++)
+         {
+              moyenne=moyenne+tab[j];
+          }
+   moyenne=moyenne/(tailleTab);
+                            
+}
 
 
 defineTimerRun(rafraichirAffichage,800)
@@ -111,6 +127,7 @@ defineTask(reflechi)
 	{
     //Serial.println("proute");
     //Serial.println("reflechi");
+    byte i;
 		if (boutonP.hasBeenLongClicked())
 			{ 
 				dateChangeServo=(millis());
@@ -159,7 +176,12 @@ defineTask(reflechi)
 					if (boutonP.hasBeenDoubleClicked())
 					{
 						boutonP.acquit();
-						leServo.setVitesse(4000);
+            leServo.setVitesse(4000);
+            leServo.setObjectif(leServo.getMilieu());
+         // pour etre certain qu'on aprt du milieu et que le servo 
+          //n'est pas n'importe ou suite à des manip de type sweep
+          //ou potar par ex
+						
 						Serial.println(F("si lecture EEPROM pour potence Simple clic, si reglage potence double clic"));
 						etatCalibrateur=LECTURE_OU_ECRITURE_EEEPROM;
 					} 
@@ -170,10 +192,10 @@ defineTask(reflechi)
 						{
 							boutonP.acquit();
 							EEPROM.get(ADRESSE_EEPROM, bonnePositionPotence); //lire la prom
-                                                        Serial.println("j'ai lu");
-                                                        Serial.println(bonnePositionPotence);
-                                                        potence.setObjectif(bonnePositionPotence);
-                                                        etatCalibrateur=MESREFPULSE;
+              Serial.println("j'ai lu");
+              Serial.println(bonnePositionPotence);
+              potence.setObjectif(bonnePositionPotence);
+              etatCalibrateur=MESREFPULSE;
 						}
 				 
 					if (boutonP.hasBeenDoubleClicked())
@@ -186,11 +208,8 @@ defineTask(reflechi)
 					break;
 
           
-                                case REGPOTENCINVIT :
-					leServo.setObjectif(leServo.getMilieu());
-					// pour etre certain qu'on aprt du milieu et que le servo 
-					//n'est pas n'importe ou suite à des manip de type sweep
-					//ou potar par ex
+          case REGPOTENCINVIT :
+					
 					if (lePotar.getValue()>1000)
 					{
 						etatCalibrateur=REGLPOTENC;
@@ -217,35 +236,33 @@ defineTask(reflechi)
 						}
 					break;
 			 
-				case MESREFPULSE: //mesure des impulsion de reference sur une rotation de delta
-					Serial.println("ICI");
-					compteur=0;
-					compteurRef=0;
-//                                        Serial.print("En Cours=");
-//                                        Serial.print(leServo.getEnCours());
-//                                        Serial.print(" Objectif =");
-//                                        Serial.println(leServo.getObjectif());
-					//objTest=leServo.getMilieu()+DELTA;
-					leServo.setObjectif(leServo.getMilieu()+DELTA);
-//                                        Serial.println("Envoi incrément Servo");
-//                                        Serial.println("En Cours=");
-//                                        Serial.print(leServo.getEnCours());
-//                                        Serial.print(" Objectif =");
-//                                        Serial.println(leServo.getObjectif());
-					sleep(TEMPOSLEEP);
-//                                        Serial.println("Fin attente");
-//                                        Serial.println("En Cours=");
-//                                        Serial.print(leServo.getEnCours());
-//                                        Serial.print(" Objectif =");
-//                                        Serial.println(leServo.getObjectif());
+				case MESREFPULSE: //mesure des impulsion de reference sur une rotation de delta faite X fois pour plus de certitude
+       
+          compteurRef=0;
+          for (i=0;i<NBRCYCLE_AR;i=i+1)
+          {
+    					Serial.print(F("iteration de mesure de ref="));
+    					compteur=0;
+    					
+    					leServo.setObjectif(leServo.getMilieu()+DELTA);
+    					sleep(TEMPOSLEEP);
+              mesureRef[i]=compteur;
+              leServo.setObjectif(leServo.getMilieu());
+              sleep(TEMPOSLEEP);
+              Serial.println(mesureRef[i]);
+          }
+          
+
+
+          
 					etatCalibrateur=FINDMINMAX;
-					//Serial.println("la");
-					compteurRef=compteur;
-                                        Serial.print(" SUPERcmpteurRef=");
-                                        Serial.println(compteurRef);
-//                                        Serial.print(" OBJTEST=");
-//                                        Serial.println(leServo.getObjectif());
-					
+					compteurRef=moyenne(NBRCYCLE_AR,mesureRef);
+          Serial.print(" SUPERcmpteurRef=");
+          Serial.println(compteurRef);
+
+
+
+          
 					if (compteurRef==0)
 						{
 							Serial.println(F("PB : compteur Ref=0 aucune impulsion fourche optique détecté"));
@@ -311,7 +328,7 @@ defineTask(reflechi)
 
 					//séquence pour mesurer une vitesse et amplitude moyenne
 					//(10 cycle d'aller et retour et enregistrement systématique des mesures)
-					byte i;
+					
 					for (i=0;i<NBRCYCLE_AR*2;i=i+2)
 						{
 							compteur=0;
@@ -537,6 +554,9 @@ void setup()
 { 
 	compteur++;       
 }     
+
+
+
          
 void loop ()
 {
