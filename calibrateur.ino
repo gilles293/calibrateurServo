@@ -195,10 +195,13 @@ defineTask(reflechi)
 						{
 							boutonP.acquit();
 							EEPROM.get(ADRESSE_EEPROM, bonnePositionPotence); //lire la prom
-              Serial.println("j'ai lu");
+
+              Serial.println(F("j'ai lu"));
               Serial.println(bonnePositionPotence);
               potence.setObjectif(bonnePositionPotence);
+              sleep( TEMPOSLEEP );
               etatCalibrateur=MESREFPULSE;
+
 						}
 				 
 					if (boutonP.hasBeenDoubleClicked())
@@ -234,7 +237,8 @@ defineTask(reflechi)
 							bonnePositionPotence=map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax());
 							boutonP.acquit();
               EEPROM.put(ADRESSE_EEPROM, bonnePositionPotence);//enregistre en eeprom
-              Serial.println("sauver en prom");
+              Serial.print(F("sauver en prom = ")); Serial.println( bonnePositionPotence );
+
 							etatCalibrateur=MESREFPULSE;
 						}
 					break;
@@ -262,23 +266,22 @@ defineTask(reflechi)
           
 					etatCalibrateur=FINDMINMAX;
 					compteurRef=moyenne(NBRCYCLE_AR,mesureRef);
-          Serial.print(" SUPERcmpteurRefMoyenne=");
+          Serial.print(F(" SUPERcmpteurRefMoyenne="));
           Serial.println(compteurRef);
-
-
-
-          
 					if (compteurRef==0)
 						{
 							Serial.println(F("PB : compteur Ref=0 aucune impulsion fourche optique détecté"));
 							Serial.println(F("retour au début de procédure"));
 							etatCalibrateur=USB;
 						}
+
           if (ERREURCOMPTAGE*3>compteurRef)
              {
-              Serial.println("ce serait bien que la marge d'erreur soit de l'ordre de 30% de la mesure de reference");
-							Serial.println("je vais faire autre chose.... Programme a recompiler");
-              Serial.println("modifier macro ERREURCOMPTAGE et DELTA");
+              Serial.println(F("ce serait bien que la marge d'erreur soit de l'ordre de 30% de la mesure de reference"));
+							Serial.println(F("je vais faire autre chose.... Programme a recompiler"));
+              Serial.println(F("modifier macro ERREURCOMPTAGE et DELTA"));
+
+
 							etatCalibrateur=POTAR;
               affichage.affiche(POTAR);
               }
