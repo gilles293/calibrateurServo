@@ -30,9 +30,9 @@
 #include <Adafruit_PWMServoDriver.h>
 #include <Servo.h>
 #define DELTA 150
-#define TEMPOSLEEP 1000 //en ms le temps pour le servo de bouger d'un increment quand on fait les mesure à la roue codeuse
-#define ERREURCOMPTAGE 7 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
-#define NBRCYCLE_AR 5 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
+#define TEMPOSLEEP 800 //en ms le temps pour le servo de bouger d'un increment quand on fait les mesure à la roue codeuse
+#define ERREURCOMPTAGE 20 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
+#define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
 #define TEMPO_STAT 200 // tempo pour laisser le servo avancr lors des mesures statistique à la fin de la calibration
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de l potence est stocké
 
@@ -84,6 +84,7 @@ int moyenne (int tailleTab, int tab [])
               moyenne=moyenne+tab[j];
           }
    moyenne=moyenne/(tailleTab);
+   return moyenne;
                             
 }
 
@@ -232,8 +233,8 @@ defineTask(reflechi)
 						{
 							bonnePositionPotence=map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax());
 							boutonP.acquit();
-                                                        EEPROM.put(ADRESSE_EEPROM, bonnePositionPotence);//enregistre en eeprom
-                                                        Serial.println("sauver en prom");
+              EEPROM.put(ADRESSE_EEPROM, bonnePositionPotence);//enregistre en eeprom
+              Serial.println("sauver en prom");
 							etatCalibrateur=MESREFPULSE;
 						}
 					break;
@@ -241,16 +242,18 @@ defineTask(reflechi)
 				case MESREFPULSE: //mesure des impulsion de reference sur une rotation de delta faite X fois pour plus de certitude
        
           compteurRef=0;
+          compteur=0;
           for (i=0;i<NBRCYCLE_AR;i=i+1)
           {
     					Serial.print(F("iteration de mesure de ref="));
-    					compteur=0;
+    					
     					
     					leServo.setObjectif(leServo.getMilieu()+DELTA);
     					sleep(TEMPOSLEEP);
               mesureRef[i]=compteur;
               leServo.setObjectif(leServo.getMilieu());
               sleep(TEMPOSLEEP);
+              compteur=0;
               Serial.println(mesureRef[i]);
           }
           
@@ -259,7 +262,7 @@ defineTask(reflechi)
           
 					etatCalibrateur=FINDMINMAX;
 					compteurRef=moyenne(NBRCYCLE_AR,mesureRef);
-          Serial.print(" SUPERcmpteurRef=");
+          Serial.print(" SUPERcmpteurRefMoyenne=");
           Serial.println(compteurRef);
 
 
@@ -271,41 +274,42 @@ defineTask(reflechi)
 							Serial.println(F("retour au début de procédure"));
 							etatCalibrateur=USB;
 						}
-                                        if (ERREURCOMPTAGE*3>compteurRef)
-                                                {
-                                                        Serial.println("ce serait bien que la marge d'erreur soit de l'ordre de 30% de la mesure de reference");
+          if (ERREURCOMPTAGE*3>compteurRef)
+             {
+              Serial.println("ce serait bien que la marge d'erreur soit de l'ordre de 30% de la mesure de reference");
 							Serial.println("je vais faire autre chose.... Programme a recompiler");
-                                                        Serial.println("modifier macro ERREURCOMPTAGE et DELTA");
+              Serial.println("modifier macro ERREURCOMPTAGE et DELTA");
 							etatCalibrateur=POTAR;
-                                                        affichage.affiche(POTAR);
-                                                }
+              affichage.affiche(POTAR);
+              }
 					break;
 				case FINDMINMAX: 
 					//Serial.println("lalalal");
 					//sequence pour aller au max puis au min et de déterminer les pwm Min et Max du servo
+					compteur=compteurRef;
 					while (compteur>compteurRef-ERREURCOMPTAGE && compteur<compteurRef+ERREURCOMPTAGE)
 						{
 							Serial.print("M+.....");
-//                                                        Serial.print(" ObjTest=");
-//                                                        Serial.println(objTest);
+//            Serial.print(" ObjTest=");
+//            Serial.println(objTest);
                                                         
 							compteur=0;
 							//objTest=objTest+DELTA;
 							leServo.setObjectif(leServo.getObjectif()+DELTA);
 							sleep(TEMPOSLEEP);
-//                                                        Serial.print(" Objectif =");
-//                                                        Serial.println(leServo.getObjectif());
-                                                        
-                                                        Serial.print(" cmptr=");
-                                                        Serial.println(compteur);
+//            Serial.print(" Objectif =");
+//            Serial.println(leServo.getObjectif());
+                                                   
+              Serial.print(" cmptr=");
+              Serial.println(compteur);
 					
 
 						}
 					leServo.setMax(leServo.getObjectif()-DELTA);
 					leServo.setObjectif(leServo.getMilieu());
-                                        Serial.print("MAX=");
-                                        Serial.println(leServo.getMax());
-                                        Serial.println("retourneMilieu");
+          Serial.print("MAX=");
+          Serial.println(leServo.getMax());
+          Serial.println("retourneMilieu");
 					sleep(TEMPOSLEEP);
 					compteur=compteurRef;
 					while (compteur>compteurRef-ERREURCOMPTAGE && compteur<compteurRef+ERREURCOMPTAGE  )
@@ -315,16 +319,16 @@ defineTask(reflechi)
 							//objTest=objTest-DELTA;
 							leServo.setObjectif(leServo.getObjectif()-DELTA);
 							sleep(TEMPOSLEEP);
-                                                        //Serial.print(" Objectif =");
-                                                        //Serial.print(leServo.getObjectif());
+              //Serial.print(" Objectif =");
+              //Serial.print(leServo.getObjectif());
                                                         
-                                                        Serial.print(" cmpteur=");
-                                                        Serial.println(compteur);
+              Serial.print(" cmpteur=");
+              Serial.println(compteur);
 						}
 					leServo.setMin(leServo.getObjectif()+DELTA);
 					leServo.setObjectif(leServo.getObjectif()+DELTA);
-                                        Serial.print("MIN=");
-                                        Serial.println(leServo.getMin());
+          Serial.print("MIN=");
+          Serial.println(leServo.getMin());
 					sleep(TEMPOSLEEP);
 					Serial.println("la le servo est au min et va faire grande course");
 
@@ -336,26 +340,26 @@ defineTask(reflechi)
 							compteur=0;
 							compteurRef=0;//compteur ref utilisé différement dans la suite par rapport à ce qui était fait jusque là
 							tempsMesureVitesse=millis();
-                                                        Serial.print("tempsMesureVitesse=");
-                                                        Serial.println(tempsMesureVitesse);
+              Serial.print("tempsMesureVitesse=");
+              Serial.println(tempsMesureVitesse);
 							leServo.setObjectif(leServo.getMax());
 							sleep(TEMPO_STAT);
-                                                        Serial.print("cmpt=");
-                                                        Serial.println(compteur);
+              Serial.print("cmpt=");
+              Serial.println(compteur);
 								while (compteur>compteurRef)
 								{
 									compteurRef=compteur;
 									sleep(TEMPO_STAT);
-                                                                         Serial.println("yop");
+                  Serial.println("yop");
 								}
 							resultatImpulsion[i]=compteur;
 							resultatTemps[i]=millis()-tempsMesureVitesse-TEMPO_STAT;
-                                                        Serial.print(F("Cycle "));
-                                                        Serial.print(i);
-                                                        Serial.print(F(" imp= "));
-                                                        Serial.print(resultatImpulsion[i]);
-                                                        Serial.print(F(" temps= "));
-                                                        Serial.println(resultatTemps[i]);
+              Serial.print(F("Cycle "));
+              Serial.print(i);
+              Serial.print(F(" imp= "));
+              Serial.print(resultatImpulsion[i]);
+              Serial.print(F(" temps= "));
+              Serial.println(resultatTemps[i]);
                                                         
                                                         
 							compteur=0;
@@ -370,12 +374,12 @@ defineTask(reflechi)
 									}
 							resultatImpulsion[i+1]=compteur;
 							resultatTemps[i+1]=millis()-tempsMesureVitesse-TEMPO_STAT;
-                                                        Serial.print(F("Cycle "));
-                                                        Serial.print(i+1);
-                                                        Serial.print(F(" imp= "));
-                                                        Serial.print(resultatImpulsion[i+1]);
-                                                        Serial.print(F(" temps= "));
-                                                        Serial.println(resultatTemps[i+1]);
+              Serial.print(F("Cycle "));
+              Serial.print(i+1);
+              Serial.print(F(" imp= "));
+              Serial.print(resultatImpulsion[i+1]);
+              Serial.print(F(" temps= "));
+              Serial.println(resultatTemps[i+1]);
                                                         
 						}
 					Serial.println(F("ATTENTION regarder  et noter le sens de rotation du premier mouvement "));
@@ -404,7 +408,7 @@ defineTask(reflechi)
                                         EcTypeTemps=0;
 
                                         byte j;
-					for (j=0;j<NBRCYCLE_AR*2;j++)
+	                              				for (j=0;j<NBRCYCLE_AR*2;j++)
                                                 {
                                                  moyenneImpulsion=moyenneImpulsion+resultatImpulsion[j];
                                                  moyenneTemps=moyenneTemps+resultatTemps[j];
