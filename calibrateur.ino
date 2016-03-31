@@ -36,6 +36,7 @@
 #define TEMPO_STAT 200 // tempo pour laisser le servo avancr lors des mesures statistique à la fin de la calibration
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de l potence est stocké
 
+//
 enum {
 		POTAR = 3,
 		MILIEU = 4,
