@@ -7,8 +7,11 @@
 # Program principal:
 
 // A FAIRE : gérer les vitesse : les mettre à fond quand test usb les mettre plus bas pour les autres modes.
-// A FAIRE : au démarage de l'arduino initialiser les valeurs potence loin de disque optique.
-// enregistrer la potente en EEPROM
+// A FAIRE : au démarage de l'arduino initialiser les valeurs potence loin de disque optique.-> inutile plus de potence
+// enregistrer la potente en EEPROM-> fait mais sert à rien car potence va partir !
+//a Faire : lire l'autre voie de la roue codeuse pour detectr les rebond du servo
+// A faire nettoyer le code pode la potence
+//a faire tester repetabilité avec tempo à 100 et à 200. Avec 100 on a des comportement louche lors des cycles de fin (le servo bouge apeine sur certains des cycle a la palce d'un grand débatement)
 
 #*******************************************************************************
  J.Soranzo
@@ -31,9 +34,9 @@
 #include <Servo.h>
 #define DELTA 150
 #define TEMPOSLEEP 800 //en ms le temps pour le servo de bouger d'un increment quand on fait les mesure à la roue codeuse
-#define ERREURCOMPTAGE 20 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
+#define ERREURCOMPTAGE 15 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
-#define TEMPO_STAT 200 // tempo pour laisser le servo avancr lors des mesures statistique à la fin de la calibration
+#define TEMPO_STAT 100 // tempo pour laisser le servo avancr lors des mesures statistique à la fin de la calibration
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de l potence est stocké
 
 //
@@ -66,8 +69,11 @@ unsigned long dateChangeServo;
 bool changeTypeServo(false);
 int compteur(0);
 int compteurRef(0);
-int resultatImpulsion[NBRCYCLE_AR*2];
-long resultatTemps[NBRCYCLE_AR*2];
+int resultatImpulsionMax[NBRCYCLE_AR];
+long resultatTempsMax[NBRCYCLE_AR];
+int resultatImpulsionMin[NBRCYCLE_AR];
+long resultatTempsMin[NBRCYCLE_AR];
+
 int mesureRef[NBRCYCLE_AR];
 int PWMMin[NBRCYCLE_AR];
 int PWMMax[NBRCYCLE_AR];
@@ -75,7 +81,43 @@ int PWMMax[NBRCYCLE_AR];
 
 int objTest (0); // varaible temporaire pour ...peut sans doute etre supprimé en faisant apelle aux bnnes méthode pour connaitre etat courrant du servo
 
-int moyenne (int tailleTab, int tab [])
+ 
+ 
+long ecartType (int tailleTab, int tab [])
+
+{
+  long moy(moyenne(tailleTab,tab));
+  long ecType(0);
+  int j(0);
+  
+  for (j=0;j<tailleTab;j++)
+         {
+            ecType=ecType+pow(tab[j]-moy,2);
+            
+          }
+  ecType=sqrt(ecType);
+  return ecType;          
+
+}                                     
+
+long ecartType (int tailleTab, long tab [])
+
+{
+  long moy(moyenne(tailleTab,tab));
+  long ecType(0);
+  int j(0);
+  
+  for (j=0;j<tailleTab;j++)
+         {
+            ecType=ecType+pow(tab[j]-moy,2);
+            
+          }
+  ecType=sqrt(ecType);
+  return ecType;          
+
+}                
+
+long moyenne (int tailleTab, long tab [])
 
 {
   byte j;
@@ -89,6 +131,19 @@ int moyenne (int tailleTab, int tab [])
                             
 }
 
+long moyenne (int tailleTab, int tab [])
+
+{
+  byte j;
+  long moyenne (0);
+  for (j=0;j<tailleTab;j++)
+         {
+              moyenne=moyenne+tab[j];
+          }
+   moyenne=moyenne/(tailleTab);
+   return moyenne;
+                            
+}
 
 defineTimerRun(rafraichirAffichage,800)
  //ne pas mettre ce timer a une valeur trop faible pour éviter le rebond
@@ -163,8 +218,7 @@ defineTask(reflechi)
 				case USB :
 					
                                         
-                                        Serial.println(F("Double Clic pour procéder à mesure via USB, sinon simple clic change de mode"));
-                                        
+          Serial.println(F("Double Clic pour procéder à mesure via USB, sinon simple clic change de mode"));                              
 					etatCalibrateur=ETALORSWEEP;
 					break;
 
@@ -268,7 +322,10 @@ defineTask(reflechi)
 					etatCalibrateur=FINDMINMAX;
 					compteurRef=moyenne(NBRCYCLE_AR,mesureRef);
           Serial.print(F(" SUPERcmpteurRefMoyenne="));
-          Serial.println(compteurRef);
+          Serial.print(compteurRef);
+          Serial.print(F(" (ecart type : "));
+          Serial.println(ecartType(NBRCYCLE_AR,mesureRef));
+          
 					if (compteurRef==0)
 						{
 							Serial.println(F("PB : compteur Ref=0 aucune impulsion fourche optique détecté"));
@@ -335,14 +392,14 @@ defineTask(reflechi)
           Serial.println(leServo.getMin());
 					sleep(TEMPOSLEEP);
 					Serial.println("la le servo est au min et va faire grande course");
-
+          leServo.setObjectif(leServo.getMin());
 					//séquence pour mesurer une vitesse et amplitude moyenne
 					//(10 cycle d'aller et retour et enregistrement systématique des mesures)
 					
-					for (i=0;i<NBRCYCLE_AR*2;i=i+2)
+					for (i=0;i<NBRCYCLE_AR;i=i+1)
 						{
 							compteur=0;
-							compteurRef=0;//compteur ref utilisé différement dans la suite par rapport à ce qui était fait jusque là
+							compteurRef=0;//compteur ref utilisé différement dans la suite par rapport à ce qui était fait jusque là. Compteur ref est utilisé pour voir si le servo continue de bouger
 							tempsMesureVitesse=millis();
               Serial.print("tempsMesureVitesse=");
               Serial.println(tempsMesureVitesse);
@@ -356,16 +413,15 @@ defineTask(reflechi)
 									sleep(TEMPO_STAT);
                   Serial.println("yop");
 								}
-							resultatImpulsion[i]=compteur;
-							resultatTemps[i]=millis()-tempsMesureVitesse-TEMPO_STAT;
+							resultatImpulsionMax[i]=compteur;
+							resultatTempsMax[i]=millis()-tempsMesureVitesse-TEMPO_STAT;
               Serial.print(F("Cycle "));
               Serial.print(i);
               Serial.print(F(" imp= "));
-              Serial.print(resultatImpulsion[i]);
+              Serial.print(resultatImpulsionMax[i]);
               Serial.print(F(" temps= "));
-              Serial.println(resultatTemps[i]);
-                                                        
-                                                        
+              Serial.println(resultatTempsMax[i]);
+						
 							compteur=0;
 							compteurRef=0;
 							tempsMesureVitesse=millis();
@@ -375,17 +431,21 @@ defineTask(reflechi)
 									{
 									compteurRef=compteur;
 									sleep(TEMPO_STAT);
+                  Serial.println("yup");
 									}
-							resultatImpulsion[i+1]=compteur;
-							resultatTemps[i+1]=millis()-tempsMesureVitesse-TEMPO_STAT;
+							resultatImpulsionMin[i]=compteur;
+							resultatTempsMin[i]=millis()-tempsMesureVitesse-TEMPO_STAT;
               Serial.print(F("Cycle "));
               Serial.print(i+1);
               Serial.print(F(" imp= "));
-              Serial.print(resultatImpulsion[i+1]);
+              Serial.print(resultatImpulsionMin[i]);
               Serial.print(F(" temps= "));
-              Serial.println(resultatTemps[i+1]);
+              Serial.println(resultatTempsMin[i]);
                                                         
 						}
+   
+         
+             
 					Serial.println(F("ATTENTION regarder  et noter le sens de rotation du premier mouvement "));
 					Serial.println(F("si pret faire un clic "));
 					etatCalibrateur=WAITCLIC;
@@ -400,54 +460,42 @@ defineTask(reflechi)
 						} 
 					break;
 
-				case DISPRESULT: 
+				case DISPRESULT:  
 					
-                                        float moyenneImpulsion;
-                                        moyenneImpulsion=0;
-                                        float moyenneTemps;
-                                        moyenneTemps=0;
-                                        float EcTypeImpulsion;
-                                        float EcTypeTemps;
-                                        EcTypeImpulsion=0;
-                                        EcTypeTemps=0;
-
-                                        byte j;
-	                              				for (j=0;j<NBRCYCLE_AR*2;j++)
-                                                {
-                                                 moyenneImpulsion=moyenneImpulsion+resultatImpulsion[j];
-                                                 moyenneTemps=moyenneTemps+resultatTemps[j];
-                                                 }
-                                       moyenneImpulsion=moyenneImpulsion/(NBRCYCLE_AR*2);
-                                       moyenneTemps=moyenneTemps/(NBRCYCLE_AR*2); 
-                                       for (j=0;j<NBRCYCLE_AR*2;j++)
-                                                {
-                                                 EcTypeImpulsion=EcTypeImpulsion+pow(resultatImpulsion[j]-moyenneImpulsion,2);
-                                                 EcTypeTemps=EcTypeTemps+pow(resultatTemps[j]-moyenneTemps,2);
-                                                 }
-                                      EcTypeImpulsion=sqrt(EcTypeImpulsion);
-                                      EcTypeTemps=sqrt(EcTypeTemps);          
+                                        
                               
-                              
+                                       Serial.println();
+                                       Serial.println();
                                        
                                        Serial.println(F("Alors quelle sens de rotation ?") ); 
-				       Serial.print("En moyenne il y a " );
-                                       Serial.print(moyenneImpulsion);
-				       Serial.print(F(" impulsions en "));
-				       Serial.print(moyenneTemps);
-				       Serial.println(F(" ms"));          
-                                      
-				       Serial.print(F(" Ecart Type impulsion " ));
-                                       Serial.print(EcTypeImpulsion);
-				       Serial.print(F(" Ecart Type temps "));
-				       Serial.print(EcTypeTemps);
-				       Serial.println(F(" ms")); 
-					// a faire calculer moyenne des 2 tableau et calculer ecart type
-					//
-					///
-					potence.setObjectif(potence.getMax());
-					Serial.println(F("si nouveau servo : doubleClic, si changement mode clic"));
-					etatCalibrateur=WAITCLIC2;               
-					break;
+                                       Serial.println();
+                                       Serial.println();
+				                               Serial.print(F(" Dans le sens croissant pwm, moyenne : "));
+                                       Serial.print(moyenne(NBRCYCLE_AR,resultatImpulsionMax));
+                                       Serial.print(F(" impulsions (Ecart type : "));
+                                       Serial.print(ecartType(NBRCYCLE_AR,resultatImpulsionMax));
+                                       Serial.print(F(") atteintes en un temps moyen de : "));
+                                       Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMax));
+                                       Serial.print(F(" ms (ecart type : "));
+                                       Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMax));
+                                       Serial.println(F(" ms)"));
+
+                                       Serial.print(F(" Dans le sens decroissant pwm, moyenne  : "));
+                                       Serial.print(moyenne(NBRCYCLE_AR,resultatImpulsionMin));
+                                       Serial.print(F("impulsions (Ecart type : "));
+                                       Serial.print(ecartType(NBRCYCLE_AR,resultatImpulsionMin));
+                                       Serial.print(F(") atteintes en un temps moyen de : "));
+                                       Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMin));
+                                       Serial.print(F(" ms (ecart type : "));
+                                       Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMin));
+                                       Serial.println(F(" ms)"));
+                                       
+				                            
+                             			
+                            					potence.setObjectif(potence.getMax());
+                            					Serial.println(F("si nouveau servo : doubleClic, si changement mode clic"));
+                            					etatCalibrateur=WAITCLIC2;               
+                            					break;
 				   
 				case WAITCLIC2: 
 					if (boutonP.hasBeenClicked())
