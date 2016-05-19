@@ -14,6 +14,7 @@ class potar
 {
   public:
     potar(byte pin);
+    void init();//parce que dans le constructeur lire la pin anlogique ne marche pas (=0sytématiquement)
     void refresh();
     bool hasBeenMovedALot();
     void acquit(); //remet les état à zéro (moved)

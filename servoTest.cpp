@@ -36,7 +36,8 @@ int servoTest::getMax()     { return _max;      }
 void servoTest::setMax(int val)      { _max=val;      }
 void servoTest::setMin(int val)      { _min=val;      }
 void servoTest::setObjectif(int val) { _objectif=val; }
-void servoTest::setVitesse(int val)  { _vitesse=val;  } 
+void servoTest::setVitesse(int val)  { _vitesse=val;//Serial.print("vitesse=");Serial.println(val); 
+} 
 
 //autres méthodes
 bool servoTest::isMin()         { return(_enCours==_min); } 

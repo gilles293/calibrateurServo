@@ -50,7 +50,7 @@ class servoTest
 	//autres membres publics
     bool isMin();
     bool isMax();
-    void appliqueObjectif(); // methode à activer régilierment pour s'approcher de l'objectif à la vitesse choisie
+    void appliqueObjectif(); // methode à activer régulierment pour s'approcher de l'objectif à la vitesse choisie
 
   private:
     void setEnCours(int val); // c'est cette methode qui deplace le servo

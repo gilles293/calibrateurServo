@@ -6,12 +6,15 @@
 # 
 # Program principal:
 
-// A FAIRE : gérer les vitesse : les mettre à fond quand test usb les mettre plus bas pour les autres modes.
-// A FAIRE : au démarage de l'arduino initialiser les valeurs potence loin de disque optique.-> inutile plus de potence
-// enregistrer la potente en EEPROM-> fait mais sert à rien car potence va partir !
+
+//nettoyer code de la potence (2e servo)
+
+
 //a Faire : lire l'autre voie de la roue codeuse pour detectr les rebond du servo
-// A faire nettoyer le code pode la potence
+
 //a faire tester repetabilité avec tempo à 100 et à 200. Avec 100 on a des comportement louche lors des cycles de fin (le servo bouge apeine sur certains des cycle a la palce d'un grand débatement)
+// a faire : comprendre pourquoi les vitesses sont pas les memes selon les modes.
+
 
 #*******************************************************************************
  J.Soranzo
@@ -37,7 +40,8 @@
 #define ERREURCOMPTAGE 15 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
 #define TEMPO_STAT 100 // tempo pour laisser le servo avancr lors des mesures statistique à la fin de la calibration
-#define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de l potence est stocké
+#define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de vitesse est stocké
+#define VITESSEMAXSERVO 3500 // vitesse max d'un servo en microsecond de PWM par seconde
 
 //
 enum {
@@ -54,7 +58,9 @@ enum {
 		WAITCLIC2 = 17,
     LECTURE_OU_ECRITURE_EEEPROM=18,
 		SWEEPTOMIN = 2,
-		SWEPPTOMAX = 20
+		SWEEPTOMAX = 20,
+    VITESSE=22,
+   
 };
 bouton boutonP(4);
 afficheur affichage(0x20);
@@ -77,6 +83,7 @@ long resultatTempsMin[NBRCYCLE_AR];
 int mesureRef[NBRCYCLE_AR];
 int PWMMin[NBRCYCLE_AR];
 int PWMMax[NBRCYCLE_AR];
+int vitesseTemp;
 
 
 int objTest (0); // varaible temporaire pour ...peut sans doute etre supprimé en faisant apelle aux bnnes méthode pour connaitre etat courrant du servo
@@ -171,7 +178,7 @@ defineTimerRun(surveilleServo,100) //conserver 100 ou modifier le "*0.1" dans m�
 
 defineTimerRun(surveillePotar,80)
 {
-   // Serial.println("potar");
+   // Serial.println("potarrefresh");
     lePotar.refresh();
 }
 
@@ -223,18 +230,20 @@ defineTask(reflechi)
 					break;
 
 				case ETALORSWEEP :
+          
 					if (boutonP.hasBeenClicked())
 						{
 							boutonP.acquit();
 							etatCalibrateur=SWEEPTOMIN;
 							affichage.affiche(SWEEPTOMIN);
 							leServo.setObjectif(leServo.getMin());
+              lePotar.acquit();
 						}
 				 
 					if (boutonP.hasBeenDoubleClicked())
 					{
 						boutonP.acquit();
-            leServo.setVitesse(4000);
+            leServo.setVitesse(VITESSEMAXSERVO);
             leServo.setObjectif(leServo.getMilieu());
          // pour etre certain qu'on aprt du milieu et que le servo 
           //n'est pas n'importe ou suite à des manip de type sweep
@@ -518,31 +527,68 @@ defineTask(reflechi)
 				case SWEEPTOMIN:
 					if (leServo.isMin())
 						{
-							etatCalibrateur=20;
+							etatCalibrateur=SWEEPTOMAX;
 							leServo.setObjectif(leServo.getMax());
 						}
 
 					if (boutonP.hasBeenClicked())
 						{
 							boutonP.acquit();
-							etatCalibrateur=3;
-							affichage.affiche(3);
+             lePotar.acquit();
+							etatCalibrateur=POTAR;
+							affichage.affiche(POTAR);
 						}
+
+           
+           if (lePotar.hasBeenMovedALot())
+           {
+             //Serial.println("plip");
+              leServo.setVitesse(map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
+              
+            }
+           
+
+            if (boutonP.hasBeenDoubleClicked())
+           {
+              boutonP.acquit();
+              lePotar.getValue();
+              EEPROM.put(ADRESSE_EEPROM, lePotar.getValue());//enregistre en eeprom
+              Serial.print(F("sauver en prom vitesse = ")); Serial.print( lePotar.getValue());Serial.print(F("microsec de PWM par seconde"));
+            }
+           
 					break;
 		
-				case SWEPPTOMAX:
+				case SWEEPTOMAX:
 					if (leServo.isMax())
 						{
-							etatCalibrateur=2;
+							etatCalibrateur=SWEEPTOMIN;
 							leServo.setObjectif(leServo.getMin());
 						}
 
 					if (boutonP.hasBeenClicked())
 						{
 							boutonP.acquit();
-							etatCalibrateur=3;
-							affichage.affiche(3);
+              lePotar.acquit();
+							etatCalibrateur=POTAR;
+							affichage.affiche(POTAR);
 						}
+
+             if (lePotar.hasBeenMovedALot())
+           {
+              
+              //Serial.println("plup");
+               leServo.setVitesse(map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
+              
+            }
+
+           
+          if (boutonP.hasBeenDoubleClicked())
+           {
+              boutonP.acquit();
+              lePotar.getValue();
+              EEPROM.put(ADRESSE_EEPROM, map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));//enregistre en eeprom
+              Serial.print(F("sauver en prom vitesse = ")); Serial.print( map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));Serial.print(F("microsec de PWM par seconde"));
+            }
 					break;
 
 				case POTAR:
@@ -595,10 +641,24 @@ defineTask(reflechi)
 
           
 void setup() 
-{     
+{ 
+  int vitesseDinit;    
 	Serial.begin(57600);
 	potence.setPotence(); 
-	leServo.setType(true); 
+  lePotar.init();
+	leServo.setType(true);
+  EEPROM.get(ADRESSE_EEPROM, vitesseDinit);
+ // Serial.print("vitesse lu=");Serial.println(vitesseDinit);
+  if (vitesseDinit<=VITESSEMAXSERVO && vitesseDinit>=0)
+    {leServo.setVitesse(vitesseDinit);
+   // Serial.println("lalalooo");
+    }
+   else
+   {
+    //Serial.println("lalalal");
+    leServo.setVitesse(300);
+   }
+  
 	Wire.begin();
 
 	Serial.println("hello");
