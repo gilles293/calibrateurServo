@@ -42,6 +42,7 @@
 #define TEMPO_STAT 100 // tempo pour laisser le servo avancr lors des mesures statistique à la fin de la calibration
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de vitesse est stocké
 #define VITESSEMAXSERVO 3500 // vitesse max d'un servo en microsecond de PWM par seconde
+#define PINSERVO 5 // pin arduino ou est branché le servo
 
 //
 enum {
@@ -64,13 +65,13 @@ enum {
 };
 bouton boutonP(4);
 afficheur affichage(0x20);
-int bonnePositionPotence;
+//int bonnePositionPotence;
 byte etatCalibrateur (POTAR); //1= PC 2=Sweep 3=potar 4=Milieu Par défaut = 3 au démarage
 unsigned long temp;
 unsigned long tempsMesureVitesse;
 potar lePotar(0);
-servoTest leServo(5); 
-servoTest potence(11);
+servoTest leServo(PINSERVO); 
+//servoTest potence(11);
 unsigned long dateChangeServo;
 bool changeTypeServo(false);
 int compteur(0);
@@ -173,7 +174,7 @@ defineTimerRun(surveilleServo,100) //conserver 100 ou modifier le "*0.1" dans m�
 	 //Serial.println("Servo");
 	 //Serial.println("potence.
 	 leServo.appliqueObjectif();
-	 potence.appliqueObjectif();
+	 //potence.appliqueObjectif();
 }
 
 defineTimerRun(surveillePotar,80)
@@ -249,63 +250,64 @@ defineTask(reflechi)
           //n'est pas n'importe ou suite à des manip de type sweep
           //ou potar par ex
 						
-						Serial.println(F("si lecture EEPROM pour potence Simple clic, si reglage potence double clic"));
+						//Serial.println(F("si lecture EEPROM pour potence Simple clic, si reglage potence double clic"));
 						etatCalibrateur=LECTURE_OU_ECRITURE_EEEPROM;
+            etatCalibrateur=MESREFPULSE;
 					} 
 					break;   
 
-				case LECTURE_OU_ECRITURE_EEEPROM :
-					if (boutonP.hasBeenClicked())
-						{
-							boutonP.acquit();
-							EEPROM.get(ADRESSE_EEPROM, bonnePositionPotence); //lire la prom
-
-              Serial.println(F("j'ai lu"));
-              Serial.println(bonnePositionPotence);
-              potence.setObjectif(bonnePositionPotence);
-              sleep( TEMPOSLEEP );
-              etatCalibrateur=MESREFPULSE;
-
-						}
-				 
-					if (boutonP.hasBeenDoubleClicked())
-					{
-						boutonP.acquit();
-						
-						Serial.println(F("tourner potar à fond à gauche"));
-						etatCalibrateur=REGPOTENCINVIT;
-					} 
-					break;
-
-          
-          case REGPOTENCINVIT :
-					
-					if (lePotar.getValue()>1000)
-					{
-						etatCalibrateur=REGLPOTENC;
-						Serial.println(F("quand potence reglé (sur le disque optique) faire 1 clic"));
-					}   
-					break;   
-
-				case REGLPOTENC :
-					// Serial.print("obj potence=");
-					// Serial.print(potence.getObjectif());
-					// Serial.print("   Encours potence=");
-					// Serial.print(potence.getEnCours());
-					// Serial.print("   obj Pot=");
-					// Serial.println(map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax()));
-					// Serial.println("_____");
-					potence.setObjectif(map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax()));
-					if (boutonP.hasBeenClicked())
-						{
-							bonnePositionPotence=map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax());
-							boutonP.acquit();
-              EEPROM.put(ADRESSE_EEPROM, bonnePositionPotence);//enregistre en eeprom
-              Serial.print(F("sauver en prom = ")); Serial.println( bonnePositionPotence );
-
-							etatCalibrateur=MESREFPULSE;
-						}
-					break;
+//				case LECTURE_OU_ECRITURE_EEEPROM :
+//					if (boutonP.hasBeenClicked())
+//						{
+//							boutonP.acquit();
+//							EEPROM.get(ADRESSE_EEPROM, bonnePositionPotence); //lire la prom
+//
+//              Serial.println(F("j'ai lu"));
+//              Serial.println(bonnePositionPotence);
+//              potence.setObjectif(bonnePositionPotence);
+//              sleep( TEMPOSLEEP );
+//              etatCalibrateur=MESREFPULSE;
+//
+//						}
+//				 
+//					if (boutonP.hasBeenDoubleClicked())
+//					{
+//						boutonP.acquit();
+//						
+//						Serial.println(F("tourner potar à fond à gauche"));
+//						etatCalibrateur=REGPOTENCINVIT;
+//					} 
+//					break;
+//
+//          
+//          case REGPOTENCINVIT :
+//					
+//					if (lePotar.getValue()>1000)
+//					{
+//						etatCalibrateur=REGLPOTENC;
+//						Serial.println(F("quand potence reglé (sur le disque optique) faire 1 clic"));
+//					}   
+//					break;   
+//
+//				case REGLPOTENC :
+//					// Serial.print("obj potence=");
+//					// Serial.print(potence.getObjectif());
+//					// Serial.print("   Encours potence=");
+//					// Serial.print(potence.getEnCours());
+//					// Serial.print("   obj Pot=");
+//					// Serial.println(map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax()));
+//					// Serial.println("_____");
+//					potence.setObjectif(map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax()));
+//					if (boutonP.hasBeenClicked())
+//						{
+//							bonnePositionPotence=map(lePotar.getValue(),0,1023,potence.getMin(),potence.getMax());
+//							boutonP.acquit();
+//              EEPROM.put(ADRESSE_EEPROM, bonnePositionPotence);//enregistre en eeprom
+//              Serial.print(F("sauver en prom = ")); Serial.println( bonnePositionPotence );
+//
+//							etatCalibrateur=MESREFPULSE;
+//						}
+//					break;
 			 
 				case MESREFPULSE: //mesure des impulsion de reference sur une rotation de delta faite X fois pour plus de certitude
        
@@ -418,9 +420,13 @@ defineTask(reflechi)
               Serial.println(compteur);
 								while (compteur>compteurRef)
 								{
+									
 									compteurRef=compteur;
-									sleep(TEMPO_STAT);
-                  Serial.println("yop");
+									
+                  Serial.print("yop");
+                  Serial.print(" cmpt=");
+                  Serial.println(compteur);
+                  sleep(TEMPO_STAT);
 								}
 							resultatImpulsionMax[i]=compteur;
 							resultatTempsMax[i]=millis()-tempsMesureVitesse-TEMPO_STAT;
@@ -439,8 +445,11 @@ defineTask(reflechi)
 								while (compteur>compteurRef)
 									{
 									compteurRef=compteur;
-									sleep(TEMPO_STAT);
-                  Serial.println("yup");
+									
+                  Serial.print("yup ");
+                  Serial.print("cmpt=");
+                  Serial.println(compteur);
+                  sleep(TEMPO_STAT);
 									}
 							resultatImpulsionMin[i]=compteur;
 							resultatTempsMin[i]=millis()-tempsMesureVitesse-TEMPO_STAT;
@@ -501,7 +510,7 @@ defineTask(reflechi)
                                        
 				                            
                              			
-                            					potence.setObjectif(potence.getMax());
+                            					//potence.setObjectif(potence.getMax());
                             					Serial.println(F("si nouveau servo : doubleClic, si changement mode clic"));
                             					etatCalibrateur=WAITCLIC2;               
                             					break;
@@ -510,16 +519,18 @@ defineTask(reflechi)
 					if (boutonP.hasBeenClicked())
 						{
 							boutonP.acquit();
-							etatCalibrateur=2;
-							affichage.affiche(2);
+							etatCalibrateur=SWEEPTOMIN;
+							affichage.affiche(SWEEPTOMIN);
 							leServo.setObjectif(leServo.getMin());
+              Serial.print(F("bouger le potar modifie la vitesse, double click la sauve en prom "));
 						} 
 					if (boutonP.hasBeenDoubleClicked())
 						{
 							boutonP.acquit();
-							etatCalibrateur=13;
+							etatCalibrateur=MESREFPULSE;
+              leServo=servoTest(PINSERVO);
 							leServo.setObjectif(leServo.getMilieu());
-							potence.setObjectif(bonnePositionPotence);
+							//potence.setObjectif(bonnePositionPotence);
 							sleep(TEMPOSLEEP*3);
 						}    
 					break ;    
@@ -644,7 +655,7 @@ void setup()
 { 
   int vitesseDinit;    
 	Serial.begin(57600);
-	potence.setPotence(); 
+	//potence.setPotence(); 
   lePotar.init();
 	leServo.setType(true);
   EEPROM.get(ADRESSE_EEPROM, vitesseDinit);

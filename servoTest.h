@@ -35,7 +35,7 @@ class servoTest
 	//setters & getters
     bool getType();
     void setType(bool type);
-    void setPotence();
+    //void setPotence();
     void setObjectif(int value);
     int getObjectif();
     int getVitesse();

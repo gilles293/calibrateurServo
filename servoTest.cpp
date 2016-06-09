@@ -72,17 +72,17 @@ void servoTest::setType(bool type)
 		}
 }
     
-void servoTest::setPotence()
-  {
-	_type=true;
-	_min=1000;   //1000
-	_max=2000; //2000
-	_milieu=(_min+_max)/2;
-	_vitesse=3000;
-	_enCours=_max-1;
-	_objectif=_max;
-	_myServo.attach(_pin); 
-}  
+//void servoTest::setPotence()
+//  {
+//	_type=true;
+//	_min=1000;   //1000
+//	_max=2000; //2000
+//	_milieu=(_min+_max)/2;
+//	_vitesse=3000;
+//	_enCours=_max-1;
+//	_objectif=_max;
+//	_myServo.attach(_pin); 
+//}  
 
 // C'est reellement cette methode qui provoque les deplacement du servomoteur    
 void servoTest::setEnCours(int val)
