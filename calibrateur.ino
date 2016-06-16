@@ -9,7 +9,7 @@
 
 //nettoyer code de la potence (2e servo)
 
-
+//afaire : faire un réinit propre car si on fait 2 étalonnage à la suite ca marche pas
 //a Faire : lire l'autre voie de la roue codeuse pour detectr les rebond du servo
 
 //a faire tester repetabilité avec tempo à 100 et à 200. Avec 100 on a des comportement louche lors des cycles de fin (le servo bouge apeine sur certains des cycle a la palce d'un grand débatement)
@@ -418,7 +418,7 @@ defineTask(reflechi)
 							sleep(TEMPO_STAT);
               Serial.print("cmpt=");
               Serial.println(compteur);
-								while (compteur>compteurRef)
+								while (compteur>compteurRef+20)
 								{
 									
 									compteurRef=compteur;
@@ -442,7 +442,7 @@ defineTask(reflechi)
 							tempsMesureVitesse=millis();
 							leServo.setObjectif(leServo.getMin());
 							sleep(TEMPO_STAT);
-								while (compteur>compteurRef)
+								while (compteur>compteurRef+20)
 									{
 									compteurRef=compteur;
 									
