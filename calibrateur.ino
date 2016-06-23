@@ -168,7 +168,7 @@ defineTimerRun(surveilleBouton,40)
 	boutonP.refreshBouton();
 }
 
-defineTimerRun(surveilleServo,100) //conserver 100 ou modifier le "*0.1" dans méthode appliqueobjectif du Servo
+defineTimerRun(RafraichiServo,100) //conserver 100 ou modifier le "*0.1" dans méthode appliqueobjectif du Servo
 {  
 	 //Serial.println("Servo");
 	 //Serial.println("potence.
@@ -690,9 +690,12 @@ void setup()
 void loop ()
 {
 	mySCoop.sleep(1);
+   
 	if (millis()>2000+temp)
 		{
 			temp=millis();
+          Serial.print("stackLeft=");
+          Serial.println(reflechi.stackLeft());
 		}
 
 }
