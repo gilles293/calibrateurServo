@@ -36,7 +36,7 @@
 #include <Adafruit_PWMServoDriver.h>
 #include <Servo.h>
 #define DELTA 150
-#define TEMPOSLEEP 800 //en ms le temps pour le servo de bouger d'un increment quand on fait les mesure à la roue codeuse
+#define TEMPOSLEEP 800 //en ms le temps d'etre sur que le servo ait bougé d'un increment quand on fait les mesure à la roue codeuse
 #define ERREURCOMPTAGE 15 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
 #define TEMPO_STAT 100 // tempo pour laisser le servo avancr lors des mesures statistique à la fin de la calibration
@@ -154,8 +154,7 @@ long moyenne (int tailleTab, int tab [])
 }
 
 defineTimerRun(rafraichirAffichage,800)
- //ne pas mettre ce timer a une valeur trop faible pour éviter le rebond
- //lors de l'apuui bouton (ne pas compter des apuis multiple pour un seul appuie voulu)   
+    
 {  
 	 //Serial.println("affichagePP");
 	  affichage.refreshAfficheur();
@@ -163,7 +162,7 @@ defineTimerRun(rafraichirAffichage,800)
 
 defineTimerRun(surveilleBouton,40)
 //ne pas mettre ce timer a une valeur trop faible pour éviter le rebond lors de
-//l'apuui bouton (ne pas compter des apuis multiple pour un seul appuie voulu)   
+//l'appui bouton (ne pas compter des apuis multiple pour un seul appuie voulu)   
 {  
 	//Serial.println("bouton");
 	boutonP.refreshBouton();
@@ -563,8 +562,9 @@ defineTask(reflechi)
            {
               boutonP.acquit();
               lePotar.getValue();
-              EEPROM.put(ADRESSE_EEPROM, lePotar.getValue());//enregistre en eeprom
-              Serial.print(F("sauver en prom vitesse = ")); Serial.print( lePotar.getValue());Serial.print(F("microsec de PWM par seconde"));
+              EEPROM.put(ADRESSE_EEPROM, map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));//enregistre en eeprom
+              Serial.print(F("sauver en prom vitesse = ")); Serial.print( map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));Serial.print(F("microsec de PWM par seconde"));
+              
             }
            
 					break;
