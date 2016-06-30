@@ -7,7 +7,7 @@
 # Program principal:
 
 
-//nettoyer code de la potence (2e servo)
+
 
 //afaire : faire un réinit propre car si on fait 2 étalonnage à la suite ca marche pas
 //a Faire : lire l'autre voie de la roue codeuse pour detectr les rebond du servo
@@ -16,6 +16,7 @@
 Avec 100 on a des comportement louche lors des cycles de fin 
 (le servo bouge apeine sur certains des cycle a la palce d'un grand débatement)
 // a faire : comprendre pourquoi les vitesses sont pas les memes selon les modes.
+//corriger le clcul de l'ecart type
 
 
 #*******************************************************************************
@@ -24,9 +25,7 @@ Avec 100 on a des comportement louche lors des cycles de fin
     https://github.com/gilles293/calibrateurServo.git
     nettoyage du code, j'ai craqué
 */ 
-//------------------------------------------------------------------------------
-//pour la suite faire moyenne pour mesure PWMIN et PWMMAX et virer 
-//le calcul de la moyenne mesureimpulsion pour le remplacer par la méthode
+//------------------------------------------------------------------------
 
 
 #include <EEPROM.h>
@@ -43,10 +42,10 @@ Avec 100 on a des comportement louche lors des cycles de fin
 #include "potar.h"
 
 //------------------------------------------------------------------------------
-#define DELTA 150
+#define DELTA 120
 #define TEMPOSLEEP 800
-//en ms le temps pour le servo de bouger d'un increment
-//quand on fait les mesure à la roue codeuse
+//en ms le temps d'etre sur que le servo ait bougé 
+//d'un increment quand on fait les mesure à la roue codeuse
 
 #define ERREURCOMPTAGE 15 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
@@ -387,8 +386,11 @@ defineTask(reflechi)
                             compteurRef=0;
                             tempsMesureVitesse=millis();
                             // Mesure de max vers min
+                             Serial.print("tempsMesureVitesse=");
+                            Serial.println(tempsMesureVitesse);
                             leServo.setObjectif(leServo.getMin());
                             sleep(TEMPO_STAT);
+                            Serial.print("cmpt="); Serial.println(compteur);
                             while (compteur>compteurRef+20)
                                 {
                                     compteurRef=compteur;
@@ -496,9 +498,9 @@ defineTask(reflechi)
                             boutonP.acquit();
                             lePotar.getValue();
                             //enregistre en eeprom
-                            EEPROM.put(ADRESSE_EEPROM, lePotar.getValue());
+                            EEPROM.put(ADRESSE_EEPROM, map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
                             Serial.print(F("sauver en prom vitesse = "));
-                            Serial.print( lePotar.getValue());
+                            Serial.print(  map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
                             Serial.print(F("microsec de PWM par seconde"));
                         }
            
@@ -613,9 +615,11 @@ void setup()
 void loop ()
 {
     mySCoop.sleep(1);
-    if (millis()>2000+temp)
+    if (millis()>5000+temp)
         {
             temp=millis();
+            Serial.print("stackLeft=");
+            Serial.println(reflechi.stackLeft());
         }
 
 }
