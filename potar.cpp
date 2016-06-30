@@ -51,7 +51,7 @@ void potar::refresh ()
     {
       _movedALot=true;
       
-      Serial.println("movedAlot");
+      //Serial.println("movedAlot");
       }
       
   }
