@@ -42,15 +42,15 @@ Avec 100 on a des comportement louche lors des cycles de fin
 #include "potar.h"
 
 //------------------------------------------------------------------------------
-#define DELTA 120
+#define DELTA 150
 #define TEMPOSLEEP 800
 //en ms le temps d'etre sur que le servo ait bougé 
 //d'un increment quand on fait les mesure à la roue codeuse
 
-#define ERREURCOMPTAGE 15 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
+#define ERREURCOMPTAGE 10 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
-#define TEMPO_STAT 100 // tempo pour laisser le servo avancr lors des mesures
-                       // statistique à la fin de la calibration
+#define TEMPO_STAT 200 // tempo pour laisser le servo avancer lors des mesures
+                       // statistique à la fin de la calibration ATTENTION 100ms semble etre trop court!!!!
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de vitesse est stocké
 #define VITESSEMAXSERVO 3500 // vitesse max d'un servo en microsecond de PWM par seconde
 #define PINSERVO 5 // pin arduino ou est branché le servo
@@ -118,7 +118,7 @@ long ecartType (int tailleTab, int tab [])
     {
         ecType=ecType+pow(tab[j]-moy,2);  
     }
-    ecType=sqrt(ecType);
+    ecType=sqrt(ecType/tailleTab);
     return ecType;          
 }                                     
 
@@ -131,7 +131,7 @@ long ecartType (int tailleTab, long tab [])
     {
         ecType=ecType+pow(tab[j]-moy,2);
     }
-    ecType=sqrt(ecType);
+    ecType=sqrt(ecType/tailleTab);
     return ecType;          
 }                
 
@@ -454,7 +454,7 @@ defineTask(reflechi)
                     etatCalibrateur=WAITCLIC2;               
                     break;
                    
-                case WAITCLIC2: 
+                case WAITCLIC2:  
                     if (boutonP.hasBeenClicked())
                         {
                             boutonP.acquit();
@@ -618,6 +618,7 @@ void loop ()
     if (millis()>5000+temp)
         {
             temp=millis();
+			Serial.println();
             Serial.print("stackLeft=");
             Serial.println(reflechi.stackLeft());
         }
