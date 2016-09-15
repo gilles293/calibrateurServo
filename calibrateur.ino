@@ -2,7 +2,7 @@
 #*******************************************************************************
 # Projet : VOR-005
 # Sous projet : calibrateur de servo moteurs
-# Auteurs: Gille De Bussy
+# Auteurs: Gilles De Bussy & Joel Soranzo
 # 
 # Program principal:
 
@@ -16,7 +16,7 @@
 Avec 100 on a des comportement louche lors des cycles de fin 
 (le servo bouge apeine sur certains des cycle a la palce d'un grand débatement)
 // a faire : comprendre pourquoi les vitesses sont pas les memes selon les modes.
-//corriger le clcul de l'ecart type
+//Vérifier le snes horaire ou anti horaire (le boolene sens true false est il bien commenté plus bas)
 
 
 #*******************************************************************************
@@ -93,6 +93,10 @@ int compteur(0); //variable compteur d'impulsions
                 //mise à jour par interruptions
                 
 int compteurRef(0);
+int compteurB(0);//compteur pour la 2e voie en quadrature de la fourche optique.
+// Attention ce compteur va s'incrémenter uniquement lors des interruption voie A
+int deltaAB(0);//écart entre les 2 voies
+bool sens(true); // True sens horaire False sens anti horaire
 int resultatImpulsionMax[NBRCYCLE_AR];
 long resultatTempsMax[NBRCYCLE_AR];
 int resultatImpulsionMin[NBRCYCLE_AR];
@@ -109,6 +113,12 @@ int objTest (0); // varaible temporaire pour ...peut sans doute etre supprimé
 
 //------------------------------------------------------------------------------
 //fonctions de calculs 
+
+int calcDeltaAB()
+{
+	deltaAB=compteur-compteurB;
+	return deltaAB;
+}
 long ecartType (int tailleTab, int tab [])
 {
     long moy(moyenne(tailleTab,tab));
@@ -272,15 +282,31 @@ defineTask(reflechi)
                 //de delta faite X fois pour plus de certitude
                     compteurRef=0;
                     compteur=0;
+					compteurB=0;
+					
                     for (i=0;i<NBRCYCLE_AR;i=i+1)
                     {
                         Serial.print(F("iteration de mesure de ref="));
                         leServo.setObjectif(leServo.getMilieu()+DELTA);
                         sleep(TEMPOSLEEP);
                         mesureRef[i]=compteur;
+						calcDeltaAB;
+						Serial.print("compteurB=");
+						Serial.println(compteurB);
+						if (deltaAB<=2)
+						{
+							Serial.println("pas d'ecart significatif voie A / voie B");
+							sens=true;
+						}
+						else
+						{
+							Serial.println("Ecart significatif voie A / voie B");
+							sens=false;
+						}
                         leServo.setObjectif(leServo.getMilieu());
                         sleep(TEMPOSLEEP);
                         compteur=0;
+						compteurB=0;
                         Serial.println(mesureRef[i]);
                     }
                     etatCalibrateur=FINDMINMAX;
@@ -310,8 +336,12 @@ defineTask(reflechi)
                     //les pwm Min et Max du servo
                     //----------------------------------------------------------
                     //find max
-                    compteur=compteurRef;
-                    while (compteur>compteurRef-ERREURCOMPTAGE\
+                    
+					/*
+					//Ancienne méthode sans voie B
+					compteur=compteurRef;
+                    
+					while (compteur>compteurRef-ERREURCOMPTAGE\
                             && compteur<compteurRef+ERREURCOMPTAGE)
                         {
                             Serial.print("M+.....");
@@ -321,6 +351,51 @@ defineTask(reflechi)
                             sleep(TEMPOSLEEP);
                             Serial.print(" cmptr="); Serial.println(compteur);
                         }
+					*/
+					//nouvelle méthode avec voie B
+					compteur=0;
+					compteurB=0;
+					calcDeltaAB();
+					if (sens)
+					{
+						while(deltaAB<3 && deltaAB>-3)
+						{
+							Serial.print("M+horaire.....");
+							
+							
+                            compteur=0;
+							compteurB=0;
+							
+							
+                            //objTest=objTest+DELTA;
+                            leServo.setObjectif(leServo.getObjectif()+DELTA);
+                            sleep(TEMPOSLEEP);
+                            Serial.print(" cmptr="); Serial.println(compteur);
+							Serial.print(" cmptrB="); Serial.println(compteurB);
+							calcDeltaAB();
+						}
+						
+					}
+					else
+					{
+					while(deltaAB<3+compteur && deltaAB>compteur-3)
+						{
+							Serial.print("M+AntiHoraire.....");
+							
+							
+                            compteur=0;
+							compteurB=0;
+							
+							
+                            //objTest=objTest+DELTA;
+                            leServo.setObjectif(leServo.getObjectif()+DELTA);
+                            sleep(TEMPOSLEEP);
+                            Serial.print(" cmptr="); Serial.println(compteur);
+							Serial.print(" cmptrB="); Serial.println(compteurB);
+							calcDeltaAB();
+						}	
+						
+					}
                     leServo.setMax(leServo.getObjectif()-DELTA);
                     leServo.setObjectif(leServo.getMilieu());
                     Serial.print("MAX="); Serial.println(leServo.getMax());
@@ -328,7 +403,8 @@ defineTask(reflechi)
                     sleep(TEMPOSLEEP);
                     //----------------------------------------------------------
                     //find mmin
-                    compteur=compteurRef;
+                    /*//ancienne méthode sans voie B
+					compteur=compteurRef;
                     while (compteur>compteurRef-ERREURCOMPTAGE\
                             && compteur<compteurRef+ERREURCOMPTAGE  )
                         {
@@ -339,12 +415,57 @@ defineTask(reflechi)
                             sleep(TEMPOSLEEP); 
                             Serial.print(" cmpteur="); Serial.println(compteur);
                         }
-                    leServo.setMin(leServo.getObjectif()+DELTA);
+                    
+					*/
+					//nouvelle méthode avec voie B
+					compteur=0;
+					compteurB=0;
+					calcDeltaAB();
+					if (!sens)
+					{
+						while(deltaAB<3 && deltaAB>-3)
+						{
+							Serial.print(F("M-horaire....."));
+							compteur=0;
+							compteurB=0;
+							
+                            leServo.setObjectif(leServo.getObjectif()-DELTA);
+                            sleep(TEMPOSLEEP);
+                            Serial.print(" cmptr="); Serial.println(compteur);
+							Serial.print(" cmptrB="); Serial.println(compteurB);
+							calcDeltaAB();
+						}
+						
+					}
+					else
+					{
+					while(deltaAB<3+compteur && deltaAB>compteur-3)
+						{
+							Serial.print("M+AntiHoraire.....");
+							
+							
+                            compteur=0;
+							compteurB=0;
+							
+							
+                            //objTest=objTest+DELTA;
+                            leServo.setObjectif(leServo.getObjectif()-DELTA);
+                            sleep(TEMPOSLEEP);
+                            Serial.print(" cmptr="); Serial.println(compteur);
+							Serial.print(" cmptrB="); Serial.println(compteurB);
+							calcDeltaAB();
+						}	
+						
+					}
+					leServo.setMin(leServo.getObjectif()+DELTA);
                     leServo.setObjectif(leServo.getObjectif()+DELTA);
                     Serial.print("MIN="); Serial.println(leServo.getMin());
                     sleep(TEMPOSLEEP);
                     Serial.println("la le servo est au min et va faire grande course");
-                    leServo.setObjectif(leServo.getMin());
+                    leServo.setObjectif(leServo.getMin()); //semble inutile......
+					
+					
+					
                     //----------------------------------------------------------
                     //séquence pour mesurer une vitesse et amplitude moyenne
                     //(10 cycles d'aller et retour de min à max
@@ -578,6 +699,8 @@ defineTask(reflechi)
           
 void setup() 
 { 
+  pinMode(3,INPUT); //Pin3=voie B fourche optique
+  
   int vitesseDinit;    
     Serial.begin(57600);
     //potence.setPotence(); 
@@ -606,7 +729,11 @@ void setup()
 }
  void updatePulseCompteur()
 { 
-    compteur++;       
+    compteur++;
+	if(digitalRead(3))
+	{
+		compteurB++;
+	}
 }     
 
 
