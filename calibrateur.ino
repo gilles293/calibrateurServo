@@ -7,6 +7,7 @@
 # Program principal:
 
 
+//a faire pour prochaine fois : pendant les grandes course vérifier si avec le nouveauc compteur qui peut etre négatif ça marche bien. autre point de suspissionde bug : la vitesse qui est trop élevé et que le servo n'arrive pas à suivre.
 
 
 //afaire : faire un réinit propre car si on fait 2 étalonnage à la suite ca marche pas
@@ -43,10 +44,10 @@ Avec 100 on a des comportement louche lors des cycles de fin
 
 //------------------------------------------------------------------------------
 #define DELTA 150
-#define TEMPOSLEEP 800
+#define TEMPOSLEEP 2000
 //en ms le temps d'etre sur que le servo ait bougé 
 //d'un increment quand on fait les mesure à la roue codeuse
-
+#define PINVOIEB 3 //la pin surlaquelle est branché la voie B
 #define ERREURCOMPTAGE 10 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
 #define TEMPO_STAT 200 // tempo pour laisser le servo avancer lors des mesures
@@ -195,7 +196,7 @@ defineTimerRun(surveillePotar,80)
 
 //------------------------------------------------------------------------------
 //La tache Scoop
-defineTask(reflechi)
+defineTask(reflechi,250)
     void reflechi::setup(){ }
     void reflechi::loop()
     //defineTimerRun(reflechi,40)
@@ -295,7 +296,7 @@ defineTask(reflechi)
                             Serial.println(F("retour au début de procédure"));
                             etatCalibrateur=USB;
                         }
-                    if (ERREURCOMPTAGE*3>compteurRef)
+                    if (ERREURCOMPTAGE*3>abs(compteurRef))
                     {
                         Serial.println(F("ce serait bien que la marge d'erreur soit de l'ordre de 30% de la mesure de reference"));
                         Serial.println(F("je vais faire autre chose.... Programme a recompiler"));
@@ -364,7 +365,7 @@ defineTask(reflechi)
                             leServo.setObjectif(leServo.getMax());
                             sleep(TEMPO_STAT);
                             Serial.print("cmpt="); Serial.println(compteur);
-                            while (compteur>compteurRef+20)
+                            while (abs(compteur)>abs(compteurRef)+20)
                                 {
                                     compteurRef=compteur;   
                                     Serial.print("yop");
@@ -579,6 +580,7 @@ defineTask(reflechi)
 void setup() 
 { 
   int vitesseDinit;    
+  pinMode(PINVOIEB, INPUT);      
     Serial.begin(57600);
     //potence.setPotence(); 
   lePotar.init();
@@ -602,14 +604,22 @@ void setup()
     temp=millis();
     //etatCalibrateur=3; fait dans l'init de la variable
     affichage.affiche(POTAR);
-    attachInterrupt(0, updatePulseCompteur, CHANGE ); // Int0= la pin N°2 sur un UNO
+    attachInterrupt(0, updatePulseCompteur, RISING ); // Int0= la pin N°2 sur un UNO
 }
  void updatePulseCompteur()
 { 
-    compteur++;       
+    if (digitalRead(PINVOIEB))
+		{compteur++;       }
+	else
+		{compteur--;}
+
 }     
 
-
+int freeRam () {
+    extern int __heap_start, *__brkval;
+    int v;
+    return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+}
 
          
 void loop ()
@@ -619,8 +629,10 @@ void loop ()
         {
             temp=millis();
 			Serial.println();
-            Serial.print("stackLeft=");
+            Serial.print("stackLeftScoop=");
             Serial.println(reflechi.stackLeft());
+			Serial.print("freeRam=");
+            Serial.println(freeRam());
         }
 
 }
