@@ -372,6 +372,7 @@ Correction integre par JSO le 29/9 mail Gilles
                     sleep(TEMPOSLEEP);
                     Serial.println("la le servo est au min et va faire grande course");
                     leServo.setObjectif(leServo.getMin());
+					
                     //----------------------------------------------------------
                     //séquence pour mesurer une vitesse et amplitude moyenne
                     //(10 cycles d'aller et retour de min à max
@@ -402,12 +403,9 @@ Correction integre par JSO le 29/9 mail Gilles
                             resultatImpulsionMax[i]=compteur;
                             resultatTempsMax[i]=millis()-tempsMesureVitesse-\
                                                     TEMPO_STAT;
-                            Serial.print(F("Cycle "));
-                            Serial.print(i);
-                            Serial.print(F(" imp= "));
-                            Serial.print(resultatImpulsionMax[i]);
-                            Serial.print(F(" temps= "));
-                            Serial.println(resultatTempsMax[i]);
+                            Serial.print(F("Cycle ")); Serial.print(i);
+                            Serial.print(F(" imp= ")); Serial.print(resultatImpulsionMax[i]);
+                            Serial.print(F(" temps= ")); Serial.println(resultatTempsMax[i]);
                         
                             compteur=0;
                             compteurRef=0;
