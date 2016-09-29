@@ -7,7 +7,8 @@
 # Program principal:
 
 
-//a faire pour prochaine fois : pendant les grandes course vérifier si avec le nouveauc compteur qui peut etre négatif ça marche bien. autre point de suspissionde bug : la vitesse qui est trop élevé et que le servo n'arrive pas à suivre.
+//a faire pour prochaine fois : pendant les grandes course vérifier si avec le nouveauc compteur qui peut etre négatif ça marche bien. 
+autre point de suspissionde bug : la vitesse qui est trop élevé et que le servo n'arrive pas à suivre.
 
 
 //afaire : faire un réinit propre car si on fait 2 étalonnage à la suite ca marche pas
@@ -17,7 +18,7 @@
 Avec 100 on a des comportement louche lors des cycles de fin 
 (le servo bouge apeine sur certains des cycle a la palce d'un grand débatement)
 // a faire : comprendre pourquoi les vitesses sont pas les memes selon les modes.
-//corriger le clcul de l'ecart type
+//corriger le calcul de l'ecart type
 
 
 #*******************************************************************************
@@ -53,7 +54,7 @@ Avec 100 on a des comportement louche lors des cycles de fin
 #define TEMPO_STAT 200 // tempo pour laisser le servo avancer lors des mesures
                        // statistique à la fin de la calibration ATTENTION 100ms semble etre trop court!!!!
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de vitesse est stocké
-#define VITESSEMAXSERVO 3500 // vitesse max d'un servo en microsecond de PWM par seconde
+#define VITESSEMAXSERVO 2000 // vitesse max d'un servo en microsecond de PWM par seconde
 #define PINSERVO 5 // pin arduino ou est branché le servo
 
 //------------------------------------------------------------------------------
@@ -259,6 +260,8 @@ defineTask(reflechi,250)
                     {
                         boutonP.acquit();
                         leServo.setVitesse(VITESSEMAXSERVO);
+						Serial.print("vitesse=");
+						Serial.println(VITESSEMAXSERVO);
                         leServo.setObjectif(leServo.getMilieu());
          // pour etre certain qu'on part du milieu et que le servo 
           //n'est pas n'importe ou suite à des manip de type sweep
@@ -589,11 +592,13 @@ void setup()
  // Serial.print("vitesse lu=");Serial.println(vitesseDinit);
   if (vitesseDinit<=VITESSEMAXSERVO && vitesseDinit>=0)
     {leServo.setVitesse(vitesseDinit);
-   // Serial.println("lalalooo");
+    Serial.print("vitesse EEPROM=");
+	Serial.print(vitesseDinit);
+   
     }
    else
    {
-    //Serial.println("lalalal");
+    Serial.println("emploi de la vitesse 300");
     leServo.setVitesse(300);
    }
   
