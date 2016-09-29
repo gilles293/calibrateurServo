@@ -278,7 +278,9 @@ defineTask(reflechi,250)
                     compteur=0;
                     for (i=0;i<NBRCYCLE_AR;i=i+1)
                     {
-                        Serial.print(F("iteration de mesure de ref="));
+                        //mesure milieu+delta, tempo, get_compteur
+						//milieu, tempo, raz_compteur
+						Serial.print(F("iteration de mesure de ref="));
                         leServo.setObjectif(leServo.getMilieu()+DELTA);
                         sleep(TEMPOSLEEP);
                         mesureRef[i]=compteur;
@@ -288,11 +290,13 @@ defineTask(reflechi,250)
                         Serial.println(mesureRef[i]);
                     }
                     etatCalibrateur=FINDMINMAX;
+					//Affichage de ce resultat
                     compteurRef=moyenne(NBRCYCLE_AR,mesureRef);
                     Serial.print(F(" SUPERcmpteurRefMoyenne="));
                     Serial.print(compteurRef);
                     Serial.print(F(" (ecart type : "));
                     Serial.println(ecartType(NBRCYCLE_AR,mesureRef));
+					// 2 petites vérification ref <> 0 et ref pqs trop petit
                     if (compteurRef==0)
                         {
                             Serial.println(F("PB : compteur Ref=0 aucune impulsion fourche optique détecté"));
@@ -314,9 +318,21 @@ defineTask(reflechi,250)
                     //les pwm Min et Max du servo
                     //----------------------------------------------------------
                     //find max
+					// Principe : on commande un DELTA déplacement, on laisse
+					//   compter et on regarde si le compteur est égal
+					//   à ref +/- une petite erreur autorisée
+					//   Si oui alors on recommence sinon on doit etre en butee
+					
                     compteur=compteurRef;
-                    while (compteur>compteurRef-ERREURCOMPTAGE\
-                            && compteur<compteurRef+ERREURCOMPTAGE)
+					while (abs(compteur)>(abs(compteurRef)-ERREURCOMPTAGE)\
+                            && abs(compteur)<(abs(compteurRef)+ERREURCOMPTAGE))
+/*
+Correction integre par JSO le 29/9 mail Gilles
+-                    while (compteur>compteurRef-ERREURCOMPTAGE\
+-                            && compteur<compteurRef+ERREURCOMPTAGE)
++                    while (abs(compteur)>(abs(compteurRef)-ERREURCOMPTAGE)\
++                            && abs(compteur)<(abs(compteurRef)+ERREURCOMPTAGE))
+*/
                         {
                             Serial.print("M+.....");
                             compteur=0;
@@ -333,8 +349,15 @@ defineTask(reflechi,250)
                     //----------------------------------------------------------
                     //find mmin
                     compteur=compteurRef;
-                    while (compteur>compteurRef-ERREURCOMPTAGE\
-                            && compteur<compteurRef+ERREURCOMPTAGE  )
+                    while (abs(compteur)>(abs(compteurRef)-ERREURCOMPTAGE)\
+                            && abs(compteur)<(abs(compteurRef)+ERREURCOMPTAGE)
+/*
+Correction integre par JSO le 29/9 mail Gilles
+-                    while (compteur>compteurRef-ERREURCOMPTAGE\
+-                            && compteur<compteurRef+ERREURCOMPTAGE  )
++                    while (abs(compteur)>(abs(compteurRef)-ERREURCOMPTAGE)\
++                            && abs(compteur)<(abs(compteurRef)+ERREURCOMPTAGE))
+*/
                         {
                             Serial.print(F("M-......"));
                             compteur=0;
