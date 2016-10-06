@@ -8,7 +8,7 @@
 
 
 //a faire pour prochaine fois : pendant les grandes course vérifier si avec le nouveauc compteur qui peut etre négatif ça marche bien. 
-autre point de suspissionde bug : la vitesse qui est trop élevé et que le servo n'arrive pas à suivre.
+autre point de suspissionde bug : la vitesse qui est trop élevé et que le servo n'arrive pas à suivre.--> il suffit de baisser VITESSEMAXSERVO (passé de 3500 à 2500)
 
 
 //afaire : faire un réinit propre car si on fait 2 étalonnage à la suite ca marche pas
@@ -315,8 +315,8 @@ defineTask(reflechi,250)
                     //----------------------------------------------------------
                     //find max
                     compteur=compteurRef;
-                    while (compteur>compteurRef-ERREURCOMPTAGE\
-                            && compteur<compteurRef+ERREURCOMPTAGE)
+                    while (abs(compteur)>(abs(compteurRef)-ERREURCOMPTAGE)\
+                            && abs(compteur)<(abs(compteurRef)+ERREURCOMPTAGE))
                         {
                             Serial.print("M+.....");
                             compteur=0;
@@ -333,8 +333,8 @@ defineTask(reflechi,250)
                     //----------------------------------------------------------
                     //find mmin
                     compteur=compteurRef;
-                    while (compteur>compteurRef-ERREURCOMPTAGE\
-                            && compteur<compteurRef+ERREURCOMPTAGE  )
+                    while (abs(compteur)>(abs(compteurRef)-ERREURCOMPTAGE)\
+                            && abs(compteur)<(abs(compteurRef)+ERREURCOMPTAGE))
                         {
                             Serial.print(F("M-......"));
                             compteur=0;
@@ -630,7 +630,8 @@ int freeRam () {
 void loop ()
 {
     mySCoop.sleep(1);
-    if (millis()>5000+temp)
+    /*
+	if (millis()>5000+temp)
         {
             temp=millis();
 			Serial.println();
@@ -639,6 +640,7 @@ void loop ()
 			Serial.print("freeRam=");
             Serial.println(freeRam());
         }
-
+	*/
+	
 }
 
