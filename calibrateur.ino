@@ -9,7 +9,9 @@
 
 //a faire pour prochaine fois : pendant les grandes course vérifier si avec le nouveauc compteur qui peut etre négatif ça marche bien. 
 autre point de suspissionde bug : la vitesse qui est trop élevé et que le servo n'arrive pas à suivre.--> il suffit de baisser VITESSEMAXSERVO (passé de 3500 à 2500)
-
+// a faire : arreter de demander a utilisateur de noter sens de rotation : le dire automatiquement grace à voie B 
+// vérifier que 1 impulsion = 0,5°
+// améliorer la mesure de vitesse à la fin
 
 //afaire : faire un réinit propre car si on fait 2 étalonnage à la suite ca marche pas
 //a Faire : lire l'autre voie de la roue codeuse pour detectr les rebond du servo
@@ -49,7 +51,7 @@ Avec 100 on a des comportement louche lors des cycles de fin
 //en ms le temps d'etre sur que le servo ait bougé 
 //d'un increment quand on fait les mesure à la roue codeuse
 #define PINVOIEB 3 //la pin surlaquelle est branché la voie B
-#define ERREURCOMPTAGE 10 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
+#define ERREURCOMPTAGE 6 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
 #define TEMPO_STAT 200 // tempo pour laisser le servo avancer lors des mesures
                        // statistique à la fin de la calibration ATTENTION 100ms semble etre trop court!!!!
@@ -325,8 +327,7 @@ defineTask(reflechi,250)
 					
                     compteur=compteurRef;
 
-                    while (abs(compteur)>(abs(compteurRef)-ERREURCOMPTAGE)\
-                            && abs(compteur)<(abs(compteurRef)+ERREURCOMPTAGE))
+                    while (abs(compteurRef-compteur)<ERREURCOMPTAGE)
 /*
 Correction integre par JSO le 29/9 mail Gilles
 -                    while (compteur>compteurRef-ERREURCOMPTAGE\
@@ -349,9 +350,10 @@ Correction integre par JSO le 29/9 mail Gilles
                     sleep(TEMPOSLEEP);
                     //----------------------------------------------------------
                     //find mmin
-                    compteur=compteurRef;
-                    while (abs(compteur)>(abs(compteurRef)-ERREURCOMPTAGE)\
-                            && abs(compteur)<(abs(compteurRef)+ERREURCOMPTAGE))
+                    compteur=-compteurRef;
+                    while (abs(-compteurRef-compteur)<ERREURCOMPTAGE) 
+						// inversion du signe de compteur ref car on change de sens
+						// de rotation (par rapport au sens de recherche de compteur ref)
 /*
 Correction integre par JSO le 29/9 mail Gilles
 -                    while (compteur>compteurRef-ERREURCOMPTAGE\
@@ -494,7 +496,8 @@ Correction integre par JSO le 29/9 mail Gilles
                         {
                             boutonP.acquit();
                             etatCalibrateur=MESREFPULSE;
-                            leServo=servoTest(PINSERVO);
+                            leServo.setType(leServo.getType());
+							leServo.setVitesse(VITESSEMAXSERVO);
                             leServo.setObjectif(leServo.getMilieu());
                             //potence.setObjectif(bonnePositionPotence);
                             sleep(TEMPOSLEEP*3);
