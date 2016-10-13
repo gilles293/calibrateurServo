@@ -9,12 +9,11 @@
 
 //a faire pour prochaine fois : pendant les grandes course vérifier si avec le nouveauc compteur qui peut etre négatif ça marche bien. 
 autre point de suspissionde bug : la vitesse qui est trop élevé et que le servo n'arrive pas à suivre.--> il suffit de baisser VITESSEMAXSERVO (passé de 3500 à 2500)
-// a faire : arreter de demander a utilisateur de noter sens de rotation : le dire automatiquement grace à voie B 
 // vérifier que 1 impulsion = 0,5°
 // améliorer la mesure de vitesse à la fin
 
-//afaire : faire un réinit propre car si on fait 2 étalonnage à la suite ca marche pas
-//a Faire : lire l'autre voie de la roue codeuse pour detectr les rebond du servo
+//a faire : faire un réinit propre car si on fait 2 étalonnage à la suite ca marche pas
+
 
 //a faire tester repetabilité avec tempo à 100 et à 200.
 Avec 100 on a des comportement louche lors des cycles de fin 
@@ -47,7 +46,7 @@ Avec 100 on a des comportement louche lors des cycles de fin
 
 //------------------------------------------------------------------------------
 #define DELTA 150
-#define TEMPOSLEEP 2000
+#define TEMPOSLEEP 1000
 //en ms le temps d'etre sur que le servo ait bougé 
 //d'un increment quand on fait les mesure à la roue codeuse
 #define PINVOIEB 3 //la pin surlaquelle est branché la voie B
@@ -70,7 +69,7 @@ enum {
         REGLPOTENC = 12,
         MESREFPULSE = 13,
         FINDMINMAX = 14,
-        WAITCLIC = 15,
+        //WAITCLIC = 15,
         DISPRESULT = 16,
         WAITCLIC2 = 17,
         //LECTURE_OU_ECRITURE_EEEPROM=18,
@@ -244,7 +243,7 @@ defineTask(reflechi,250)
             {
                 case USB :
                     Serial.println(F(\
-          "Double Clic pour procéder à mesure via USB, sinon simple clic change de mode"));                              
+          "Double Clic pour proceder a mesure via USB, sinon simple clic change de mode"));                              
                     etatCalibrateur=ETALORSWEEP;
                     break;
 
@@ -328,13 +327,7 @@ defineTask(reflechi,250)
                     compteur=compteurRef;
 
                     while (abs(compteurRef-compteur)<ERREURCOMPTAGE)
-/*
-Correction integre par JSO le 29/9 mail Gilles
--                    while (compteur>compteurRef-ERREURCOMPTAGE\
--                            && compteur<compteurRef+ERREURCOMPTAGE)
-+                    while (abs(compteur)>(abs(compteurRef)-ERREURCOMPTAGE)\
-+                            && abs(compteur)<(abs(compteurRef)+ERREURCOMPTAGE))
-*/
+
                         {
                             Serial.print("M+.....");
                             compteur=0;
@@ -354,13 +347,7 @@ Correction integre par JSO le 29/9 mail Gilles
                     while (abs(-compteurRef-compteur)<ERREURCOMPTAGE) 
 						// inversion du signe de compteur ref car on change de sens
 						// de rotation (par rapport au sens de recherche de compteur ref)
-/*
-Correction integre par JSO le 29/9 mail Gilles
--                    while (compteur>compteurRef-ERREURCOMPTAGE\
--                            && compteur<compteurRef+ERREURCOMPTAGE  )
-+                    while (abs(compteur)>(abs(compteurRef)-ERREURCOMPTAGE)\
-+                            && abs(compteur)<(abs(compteurRef)+ERREURCOMPTAGE))
-*/
+
 
                         {
                             Serial.print(F("M-......"));
@@ -396,7 +383,7 @@ Correction integre par JSO le 29/9 mail Gilles
                             leServo.setObjectif(leServo.getMax());
                             sleep(TEMPO_STAT);
                             Serial.print("cmpt="); Serial.println(compteur);
-                            while (abs(compteur)>abs(compteurRef)+20)
+                            while (abs(compteur)>abs(compteurRef)+10)
                                 {
                                     compteurRef=compteur;   
                                     Serial.print("yop");
@@ -420,7 +407,7 @@ Correction integre par JSO le 29/9 mail Gilles
                             leServo.setObjectif(leServo.getMin());
                             sleep(TEMPO_STAT);
                             Serial.print("cmpt="); Serial.println(compteur);
-                            while (compteur>compteurRef+20)
+                            while (compteur>compteurRef+10)
                                 {
                                     compteurRef=compteur;
                                     Serial.print("yup ");
@@ -439,27 +426,28 @@ Correction integre par JSO le 29/9 mail Gilles
                         } //fin for NBCYCLES
    
          
-             
-                    Serial.println(F("ATTENTION regarder  et noter le sens de rotation du premier mouvement "));
-                    Serial.println(F("si pret faire un clic "));
-                    etatCalibrateur=WAITCLIC;
+					sleep(TEMPO_STAT);
+					compteur=0;
+                    leServo.setObjectif(leServo.getMax());
+					etatCalibrateur=DISPRESULT;
+					Serial.println();
+                    Serial.println();
+					if (compteur<0)
+						{
+							Serial.println(F("Le servo tourne dans le sens direct "));
+							
+						}
+					else
+					{
+					Serial.println(F("Le servo tourne dans le sens indirect "));	
+					}
+					
                   
-                  
-                case WAITCLIC:
-                    if (boutonP.hasBeenClicked())
-                        {
-                            boutonP.acquit();
-                            etatCalibrateur=DISPRESULT;
-                            leServo.setObjectif(leServo.getMax());
-                        } 
-                    break;
+                
 
                 case DISPRESULT:  
-                    Serial.println();
-                    Serial.println();
-                    Serial.println(F("Alors quelle sens de rotation ?") ); 
-                    Serial.println();
-                    Serial.println();
+                    
+                    
                     Serial.print(F(" Dans le sens croissant pwm, moyenne : "));
                     Serial.print(moyenne(NBRCYCLE_AR,resultatImpulsionMax));
                     Serial.print(F(" impulsions (Ecart type : "));
