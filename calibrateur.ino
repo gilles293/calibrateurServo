@@ -55,7 +55,7 @@ Avec 100 on a des comportement louche lors des cycles de fin
 #define TEMPO_STAT 200 // tempo pour laisser le servo avancer lors des mesures
                        // statistique à la fin de la calibration ATTENTION 100ms semble etre trop court!!!!
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de vitesse est stocké
-#define VITESSEMAXSERVO 2000 // vitesse max d'un servo en microsecond de PWM par seconde
+#define VITESSEMAXSERVO 4000 // vitesse max d'un servo en microsecond de PWM par seconde
 #define PINSERVO 5 // pin arduino ou est branché le servo
 
 //------------------------------------------------------------------------------
