@@ -56,7 +56,13 @@ Avec 100 on a des comportement louche lors des cycles de fin
                        // statistique à la fin de la calibration ATTENTION 100ms semble etre trop court!!!!
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de vitesse est stocké
 #define VITESSEMAXSERVO 2000 // vitesse max d'un servo en microsecond de PWM par seconde
-#define PINSERVO 5 // pin arduino ou est branché le servo
+//cette vitesse doit imperativement etre superieure à la vitesse que
+//peut physiquement atteindre le servo afin que les mesrues de vitesse physique en fin de calibration USB soient justes.
+//Par conttre dans la sequense sweep to min sweep to max cette valeur conduit a 
+//empecher le servo d'atteindre le min et le max,
+//il faut reduire la vitesse avec le potar pour que le servo
+//ait le temps d'atteindre physiquement ses postion min et max
+#define PINSERVO 5 // pin arduino ou est branché le servo 
 
 //------------------------------------------------------------------------------
 // Etats de la machine d'état
@@ -213,6 +219,7 @@ defineTask(reflechi,250)
   */
     {
     byte i;
+        //Test de changement de servo moteur ADAFRUIT ou NORMAL
         if (boutonP.hasBeenLongClicked())
             { 
                 dateChangeServo=(millis());
@@ -232,6 +239,7 @@ defineTask(reflechi,250)
                 //sleep( 3000);
                 boutonP.acquit();
             }
+        //Affichage du nouveau type de servo moteur pendant 3s
         if (millis()>dateChangeServo+3000 && changeTypeServo)
             {
                 affichage.affiche(etatCalibrateur);
