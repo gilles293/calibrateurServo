@@ -2,7 +2,7 @@
 #*******************************************************************************
 # Projet : VOR-005
 # Sous projet : calibrateur de servo moteurs
-# Auteurs: Gille De Bussy
+# Auteurs: Gilles De Bussy
 # 
 # Program principal:
 
@@ -58,7 +58,7 @@ Avec 100 on a des comportement louche lors des cycles de fin
 						//considérer qu'il n' pas encore atteint sa fin de course et que l'on peut laisser le chronometre en 
 						//route (pour mesure de vitesse réeel du servo en °/s)
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de vitesse est stocké
-#define VITESSEMAXSERVO 4000 // vitesse max d'un servo en microsecond de PWM par seconde
+#define VITESSEMAXSERVO 2000 // vitesse max d'un servo en microsecond de PWM par seconde
 //cette vitesse doit imperativement etre superieure à la vitesse que
 //peut physiquement atteindre le servo afin que les mesrues de vitesse physique en fin de calibration USB soient justes.
 //Par conttre dans la sequense sweep to min sweep to max cette valeur conduit a 
@@ -274,6 +274,8 @@ defineTask(reflechi,250)
                         leServo.setVitesse(VITESSEMAXSERVO);
 						Serial.print("vitesse=");
 						Serial.println(VITESSEMAXSERVO);
+						Serial.print("tempo stat=");
+						Serial.println(TEMPO_STAT);
                         leServo.setObjectif(leServo.getMilieu());
          // pour etre certain qu'on part du milieu et que le servo 
           //n'est pas n'importe ou suite à des manip de type sweep
@@ -387,6 +389,16 @@ defineTask(reflechi,250)
                             //par rapport à ce qui était fait jusque là. Compteur 
                             //ref est utilisé pour voir si le servo continue
                             //de bouger
+							
+							//séquence suivante permet d'éviter que l'ensemble des mesures s'envoient en l'air 
+							// si trop d'inertie dans le servo et qu'il a à peine le temps de bouger et que l'on à arreté la mesure précédente
+							sleep(3*TEMPO_STAT);			
+							while (compteur!=0)
+							{
+								compteur=0;
+								sleep(3*TEMPO_STAT);
+							}
+							
                             tempsMesureVitesse=millis();
                             Serial.print("tempsMesureVitesse=");
                             Serial.println(tempsMesureVitesse);
@@ -411,6 +423,17 @@ defineTask(reflechi,250)
                         
                             compteur=0;
                             compteurRef=0;
+							//séquence suivante permet d'éviter que l'ensemble des mesures s'envoient en l'air 
+							// si trop d'inertie dans le servo et qu'il a à peine le temps de bouger et que l'on à arreté la mesure précédente
+							sleep(3*TEMPO_STAT);			
+							while (compteur!=0)
+							{
+								compteur=0;
+								sleep(3*TEMPO_STAT);
+							}
+							
+							
+							
                             tempsMesureVitesse=millis();
                             // Mesure de max vers min
                              Serial.print("tempsMesureVitesse=");
@@ -429,11 +452,13 @@ defineTask(reflechi,250)
                             resultatImpulsionMin[i]=compteur;
                             resultatTempsMin[i]=millis()-tempsMesureVitesse-TEMPO_STAT;
                             Serial.print(F("Cycle "));
-                            Serial.print(i+1);
+                            Serial.print(i);
                             Serial.print(F(" imp= "));
                             Serial.print(resultatImpulsionMin[i]);
                             Serial.print(F(" temps= "));
                             Serial.println(resultatTempsMin[i]);
+							Serial.println();
+							
                         } //fin for NBCYCLES
    
          
