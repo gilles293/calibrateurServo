@@ -45,20 +45,20 @@ Avec 100 on a des comportement louche lors des cycles de fin
 #include "potar.h"
 
 //------------------------------------------------------------------------------
-#define DELTA 150
+#define DELTA 150 // en servo unit (en microseconde de servo)
 #define TEMPOSLEEP 1000
 //en ms le temps d'etre sur que le servo ait bougé 
 //d'un increment quand on fait les mesure à la roue codeuse
 #define PINVOIEB 3 //la pin surlaquelle est branché la voie B
 #define ERREURCOMPTAGE 6 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
-#define TEMPO_STAT 100 // tempo pour laisser le servo avancer lors des mesures
+#define TEMPO_STAT 50 // tempo pour laisser le servo avancer lors des mesures
                        // statistique à la fin de la calibration ATTENTION 100ms semble etre trop court!!!!
 #define DEP_MINI_STAT 5  //correspond au déplacement minimum en nombre d'impulsion que doit faire le servo pour 
 						//considérer qu'il n' pas encore atteint sa fin de course et que l'on peut laisser le chronometre en 
 						//route (pour mesure de vitesse réeel du servo en °/s)
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de vitesse est stocké
-#define VITESSEMAXSERVO 2000 // vitesse max d'un servo en microsecond de PWM par seconde
+#define VITESSEMAXSERVO 4000 // vitesse max d'un servo en microsecond de PWM par seconde
 //cette vitesse doit imperativement etre superieure à la vitesse que
 //peut physiquement atteindre le servo afin que les mesrues de vitesse physique en fin de calibration USB soient justes.
 //Par conttre dans la sequense sweep to min sweep to max cette valeur conduit a 
@@ -387,27 +387,13 @@ defineTask(reflechi,250)
                     leServo.setObjectif(leServo.getMin());
 					
                     //----------------------------------------------------------
-                    //séquence pour mesurer une vitesse et amplitude moyenne
+                    //séquence pour mesurer une vitesse
                     //(10 cycles d'aller et retour de min à max
                     //et enregistrement systématique des mesures)
+					//chaque cycle s'arrete quand le servo atteint amplitude moyenne à DEP_MIN_STAT près
                     for (i=0;i<NBRCYCLE_AR;i=i+1)
                         {
                             compteur=0;
-                            compteurRef=0;
-                            //compteur ref utilisé différement dans la suite 
-                            //par rapport à ce qui était fait jusque là. Compteur 
-                            //ref est utilisé pour voir si le servo continue
-                            //de bouger
-							
-							//séquence suivante permet d'éviter que l'ensemble des mesures s'envoient en l'air 
-							// si trop d'inertie dans le servo et qu'il a à peine le temps de bouger et que l'on à arreté la mesure précédente
-							sleep(3*TEMPO_STAT);			
-							while (compteur!=0)
-							{
-								compteur=0;
-								sleep(3*TEMPO_STAT);
-							}
-							
                             tempsMesureVitesse=millis();
                             Serial.print("tempsMesureVitesse=");
                             Serial.println(tempsMesureVitesse);
@@ -415,34 +401,22 @@ defineTask(reflechi,250)
                             leServo.setObjectif(leServo.getMax());
                             sleep(TEMPO_STAT);
                             Serial.print("cmpt="); Serial.println(compteur);
-                            while (abs(compteur)>abs(compteurRef)+DEP_MINI_STAT)
+                            while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
                                 {
-                                    compteurRef=compteur;   
                                     Serial.print("yop");
                                     Serial.print(" cmpt=");
                                     Serial.println(compteur);
                                     sleep(TEMPO_STAT);
                                 }
-                            resultatImpulsionMax[i]=compteur;
+                            
                             resultatTempsMax[i]=millis()-tempsMesureVitesse-\
                                                     TEMPO_STAT;
                             Serial.print(F("Cycle ")); Serial.print(i);
-                            Serial.print(F(" imp= ")); Serial.print(resultatImpulsionMax[i]);
+                            
                             Serial.print(F(" temps= ")); Serial.println(resultatTempsMax[i]);
                         
                             compteur=0;
-                            compteurRef=0;
-							//séquence suivante permet d'éviter que l'ensemble des mesures s'envoient en l'air 
-							// si trop d'inertie dans le servo et qu'il a à peine le temps de bouger et que l'on à arreté la mesure précédente
-							sleep(3*TEMPO_STAT);			
-							while (compteur!=0)
-							{
-								compteur=0;
-								sleep(3*TEMPO_STAT);
-							}
-							
-							
-							
+                            
                             tempsMesureVitesse=millis();
                             // Mesure de max vers min
                              Serial.print("tempsMesureVitesse=");
@@ -450,7 +424,7 @@ defineTask(reflechi,250)
                             leServo.setObjectif(leServo.getMin());
                             sleep(TEMPO_STAT);
                             Serial.print("cmpt="); Serial.println(compteur);
-                            while (compteur<amplitude-DEP_MINI_STAT)
+                            while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
                                 {
                                     compteurRef=compteur;
                                     Serial.print("yup ");
@@ -458,12 +432,11 @@ defineTask(reflechi,250)
                                     Serial.println(compteur);
                                     sleep(TEMPO_STAT);
                                 }
-                            resultatImpulsionMin[i]=compteur;
+                            
                             resultatTempsMin[i]=millis()-tempsMesureVitesse-TEMPO_STAT;
                             Serial.print(F("Cycle "));
                             Serial.print(i);
-                            Serial.print(F(" imp= "));
-                            Serial.print(resultatImpulsionMin[i]);
+                            
                             Serial.print(F(" temps= "));
                             Serial.println(resultatTempsMin[i]);
 							Serial.println();
