@@ -106,10 +106,12 @@ int compteur(0); //variable compteur d'impulsions
                 
 int compteurRef(0);
 int amplitude(0);
-int resultatImpulsionMax[NBRCYCLE_AR];
+int resultatAmplitudeMax[NBRCYCLE_AR]; //en unité roue dodeuse
 long resultatTempsMax[NBRCYCLE_AR];
-int resultatImpulsionMin[NBRCYCLE_AR];
+int resultatMaxServo[NBRCYCLE_AR]; // en ServoUnit (us)
+int resultatAmplitudeMin[NBRCYCLE_AR];
 long resultatTempsMin[NBRCYCLE_AR];
+int resultatMinServo[NBRCYCLE_AR]; // en ServoUnit (us)
 
 int mesureRef[NBRCYCLE_AR];
 int PWMMin[NBRCYCLE_AR];
@@ -337,55 +339,65 @@ defineTask(reflechi,250)
 					//   compter et on regarde si le compteur est égal
 					//   à ref +/- une petite erreur autorisée
 					//   Si oui alors on recommence sinon on doit etre en butee
-					
-                    compteur=compteurRef;
-					amplitude=0;
-                    while (abs(compteurRef-compteur)<ERREURCOMPTAGE)
-
-                        {
-                            Serial.print("M+.....");
+                    for (i=0;i<NBRCYCLE_AR;i=i+1){
+                        compteur=compteurRef;
+                        amplitude=0;
+                        while (abs(compteurRef-compteur)<ERREURCOMPTAGE) {
+                            Serial.print(F("Cycle recherche MAX n°") );Serial.println(i);
+                            Serial.print(F("M+....."));
                             compteur=0;
                             //objTest=objTest+DELTA;
                             leServo.setObjectif(leServo.getObjectif()+DELTA);
                             sleep(TEMPOSLEEP);
-                            Serial.print(" cmptr="); Serial.print(compteur);
-							amplitude=amplitude+abs(compteur);
-							Serial.print(" amplitude=");Serial.println(amplitude);
+                            Serial.print(F(" cmptr=")); Serial.print(compteur);
+                            amplitude=amplitude+abs(compteur);
+                            Serial.print(F(" amplitude="));Serial.println(amplitude);
                         }
-					amplitude=amplitude-abs(compteur)	;
-					Serial.print(" amplitude retenue=");Serial.println(amplitude);	
-                    leServo.setMax(leServo.getObjectif()-DELTA);
+                        amplitude=amplitude-abs(compteur)	;
+                        resultatAmplitudeMax[i] = amplitude ;
+                        resultatMaxServo[i]= leServo.getObjectif()-DELTA;
+                        Serial.print(F(", amplitude retenue =") );Serial.println(amplitude);
+                    }
+					//Serial.print(" amplitude retenue=");Serial.println(amplitude);	
+                    //leServo.setMax(leServo.getObjectif()-DELTA);
+                    leServo.setMax( (int) moyenne( NBRCYCLE_AR, resultatMaxServo ) );
                     leServo.setObjectif(leServo.getMilieu());
                     Serial.print("MAX="); Serial.println(leServo.getMax());
                     Serial.println("retourneMilieu");
                     sleep(TEMPOSLEEP);
                     //----------------------------------------------------------
                     //find mmin
-                    compteur=-compteurRef;
-                    while (abs(-compteurRef-compteur)<ERREURCOMPTAGE) 
-						// inversion du signe de compteur ref car on change de sens
-						// de rotation (par rapport au sens de recherche de compteur ref)
-
-
-                        {
+                    for (i=0;i<NBRCYCLE_AR;i=i+1){                    
+                        compteur=-compteurRef;
+                        while (abs(-compteurRef-compteur)<ERREURCOMPTAGE){
+                        // inversion du signe de compteur ref car on change de sens
+                        // de rotation (par rapport au sens de recherche de compteur ref)
+                            Serial.print(F("Cycle recherche MIN n°") );Serial.println(i);                       
                             Serial.print(F("M-......"));
                             compteur=0;
                             //objTest=objTest-DELTA;
                             leServo.setObjectif(leServo.getObjectif()-DELTA);
                             sleep(TEMPOSLEEP); 
-                            Serial.print(" cmpteur="); Serial.print(compteur);
-							amplitude=amplitude+abs(compteur);
-							Serial.print(" amplitude=");Serial.println(amplitude);
+                            Serial.print(F(" cmptr=")); Serial.print(compteur);
+                            amplitude=amplitude+abs(compteur);
+                            Serial.print(F(" amplitude="));Serial.println(amplitude);
                         }
-					amplitude=amplitude-abs(compteur)	;
-					Serial.print(" amplitude retenue=");Serial.println(amplitude);
-                    leServo.setMin(leServo.getObjectif()+DELTA);
+                        amplitude=amplitude-abs(compteur)	;
+                        resultatAmplitudeMin[i] = amplitude ;
+                        resultatMinServo[i]= leServo.getObjectif()+DELTA; 
+                        Serial.print(F(", amplitude retenue =") );Serial.println(amplitude);
+                    }
+                    //leServo.setMin(leServo.getObjectif()+DELTA);
+                    leServo.setMin((int) moyenne( NBRCYCLE_AR, resultatMinServo ));
                     leServo.setObjectif(leServo.getObjectif()+DELTA);
                     Serial.print("MIN="); Serial.println(leServo.getMin());
                     sleep(TEMPOSLEEP);
                     Serial.println("la le servo est au min et va faire grande course");
                     leServo.setObjectif(leServo.getMin());
-					
+                    //----------------------------------------------------------
+                    //Amplitude angulaire exprimee en unite de roue codeuse
+					amplitude = moyenne( NBRCYCLE_AR, resultatAmplitudeMax );
+                    amplitude += moyenne( NBRCYCLE_AR, resultatAmplitudeMin );
                     //----------------------------------------------------------
                     //séquence pour mesurer une vitesse et amplitude moyenne
                     //(10 cycles d'aller et retour de min à max
@@ -423,11 +435,11 @@ defineTask(reflechi,250)
                                     Serial.println(compteur);
                                     sleep(TEMPO_STAT);
                                 }
-                            resultatImpulsionMax[i]=compteur;
+                            resultatAmplitudeMax[i]=compteur;
                             resultatTempsMax[i]=millis()-tempsMesureVitesse-\
                                                     TEMPO_STAT;
                             Serial.print(F("Cycle ")); Serial.print(i);
-                            Serial.print(F(" imp= ")); Serial.print(resultatImpulsionMax[i]);
+                            Serial.print(F(" imp= ")); Serial.print(resultatAmplitudeMax[i]);
                             Serial.print(F(" temps= ")); Serial.println(resultatTempsMax[i]);
                         
                             compteur=0;
@@ -458,12 +470,12 @@ defineTask(reflechi,250)
                                     Serial.println(compteur);
                                     sleep(TEMPO_STAT);
                                 }
-                            resultatImpulsionMin[i]=compteur;
+                            resultatAmplitudeMin[i]=compteur;
                             resultatTempsMin[i]=millis()-tempsMesureVitesse-TEMPO_STAT;
                             Serial.print(F("Cycle "));
                             Serial.print(i);
                             Serial.print(F(" imp= "));
-                            Serial.print(resultatImpulsionMin[i]);
+                            Serial.print(resultatAmplitudeMin[i]);
                             Serial.print(F(" temps= "));
                             Serial.println(resultatTempsMin[i]);
 							Serial.println();
@@ -494,18 +506,18 @@ defineTask(reflechi,250)
                     
                     
                     Serial.print(F(" Dans le sens croissant pwm, moyenne : "));
-                    Serial.print(moyenne(NBRCYCLE_AR,resultatImpulsionMax));
+                    Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitudeMax));
                     Serial.print(F(" impulsions (Ecart type : "));
-                    Serial.print(ecartType(NBRCYCLE_AR,resultatImpulsionMax));
+                    Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitudeMax));
                     Serial.print(F(") atteintes en un temps moyen de : "));
                     Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMax));
                     Serial.print(F(" ms (ecart type : "));
                     Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMax));
                     Serial.println(F(" ms)"));
                     Serial.print(F(" Dans le sens decroissant pwm, moyenne  : "));
-                    Serial.print(moyenne(NBRCYCLE_AR,resultatImpulsionMin));
+                    Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitudeMin));
                     Serial.print(F("impulsions (Ecart type : "));
-                    Serial.print(ecartType(NBRCYCLE_AR,resultatImpulsionMin));
+                    Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitudeMin));
                     Serial.print(F(") atteintes en un temps moyen de : "));
                     Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMin));
                     Serial.print(F(" ms (ecart type : "));
