@@ -52,8 +52,11 @@ Avec 100 on a des comportement louche lors des cycles de fin
 #define PINVOIEB 3 //la pin surlaquelle est branché la voie B
 #define ERREURCOMPTAGE 6 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
-#define TEMPO_STAT 200 // tempo pour laisser le servo avancer lors des mesures
+#define TEMPO_STAT 100 // tempo pour laisser le servo avancer lors des mesures
                        // statistique à la fin de la calibration ATTENTION 100ms semble etre trop court!!!!
+#define DEP_MINI_STAT 5  //correspond au déplacement minimum en nombre d'impulsion que doit faire le servo pour 
+						//considérer qu'il n' pas encore atteint sa fin de course et que l'on peut laisser le chronometre en 
+						//route (pour mesure de vitesse réeel du servo en °/s)
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de vitesse est stocké
 #define VITESSEMAXSERVO 4000 // vitesse max d'un servo en microsecond de PWM par seconde
 //cette vitesse doit imperativement etre superieure à la vitesse que
@@ -391,7 +394,7 @@ defineTask(reflechi,250)
                             leServo.setObjectif(leServo.getMax());
                             sleep(TEMPO_STAT);
                             Serial.print("cmpt="); Serial.println(compteur);
-                            while (abs(compteur)>abs(compteurRef)+10)
+                            while (abs(compteur)>abs(compteurRef)+DEP_MINI_STAT)
                                 {
                                     compteurRef=compteur;   
                                     Serial.print("yop");
@@ -415,7 +418,7 @@ defineTask(reflechi,250)
                             leServo.setObjectif(leServo.getMin());
                             sleep(TEMPO_STAT);
                             Serial.print("cmpt="); Serial.println(compteur);
-                            while (compteur>compteurRef+10)
+                            while (compteur>compteurRef+DEP_MINI_STAT)
                                 {
                                     compteurRef=compteur;
                                     Serial.print("yup ");
