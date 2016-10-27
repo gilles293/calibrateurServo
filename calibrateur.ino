@@ -105,6 +105,7 @@ int compteur(0); //variable compteur d'impulsions
                 //mise à jour par interruptions
                 
 int compteurRef(0);
+int amplitude(0);
 int resultatImpulsionMax[NBRCYCLE_AR];
 long resultatTempsMax[NBRCYCLE_AR];
 int resultatImpulsionMin[NBRCYCLE_AR];
@@ -338,7 +339,7 @@ defineTask(reflechi,250)
 					//   Si oui alors on recommence sinon on doit etre en butee
 					
                     compteur=compteurRef;
-
+					amplitude=0;
                     while (abs(compteurRef-compteur)<ERREURCOMPTAGE)
 
                         {
@@ -347,8 +348,12 @@ defineTask(reflechi,250)
                             //objTest=objTest+DELTA;
                             leServo.setObjectif(leServo.getObjectif()+DELTA);
                             sleep(TEMPOSLEEP);
-                            Serial.print(" cmptr="); Serial.println(compteur);
+                            Serial.print(" cmptr="); Serial.print(compteur);
+							amplitude=amplitude+abs(compteur);
+							Serial.print(" amplitude=");Serial.println(amplitude);
                         }
+					amplitude=amplitude-abs(compteur)	;
+					Serial.print(" amplitude retenue=");Serial.println(amplitude);	
                     leServo.setMax(leServo.getObjectif()-DELTA);
                     leServo.setObjectif(leServo.getMilieu());
                     Serial.print("MAX="); Serial.println(leServo.getMax());
@@ -368,8 +373,12 @@ defineTask(reflechi,250)
                             //objTest=objTest-DELTA;
                             leServo.setObjectif(leServo.getObjectif()-DELTA);
                             sleep(TEMPOSLEEP); 
-                            Serial.print(" cmpteur="); Serial.println(compteur);
+                            Serial.print(" cmpteur="); Serial.print(compteur);
+							amplitude=amplitude+abs(compteur);
+							Serial.print(" amplitude=");Serial.println(amplitude);
                         }
+					amplitude=amplitude-abs(compteur)	;
+					Serial.print(" amplitude retenue=");Serial.println(amplitude);
                     leServo.setMin(leServo.getObjectif()+DELTA);
                     leServo.setObjectif(leServo.getObjectif()+DELTA);
                     Serial.print("MIN="); Serial.println(leServo.getMin());
@@ -441,7 +450,7 @@ defineTask(reflechi,250)
                             leServo.setObjectif(leServo.getMin());
                             sleep(TEMPO_STAT);
                             Serial.print("cmpt="); Serial.println(compteur);
-                            while (compteur>compteurRef+DEP_MINI_STAT)
+                            while (compteur<amplitude-DEP_MINI_STAT)
                                 {
                                     compteurRef=compteur;
                                     Serial.print("yup ");
