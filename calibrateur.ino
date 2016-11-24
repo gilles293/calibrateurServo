@@ -14,7 +14,6 @@ autre point de suspissionde bug : la vitesse qui est trop élevé et que le serv
 
 //a faire : faire un réinit propre car si on fait 2 étalonnage à la suite ca marche pas
 
-
 //a faire tester repetabilité avec tempo à 100 et à 200.
 Avec 100 on a des comportement louche lors des cycles de fin 
 (le servo bouge apeine sur certains des cycle a la palce d'un grand débatement)
@@ -287,7 +286,7 @@ defineTask(reflechi,250)
                     break;   
 
                 case MESREFPULSE:
-                //mesure des impulsion de reference sur une rotation
+                //mesure des impulsions  de reference en provenance du capteur optique sur une rotation
                 //de delta faite X fois pour plus de certitude
                     compteurRef=0;
                     compteur=0;
@@ -334,7 +333,7 @@ defineTask(reflechi,250)
                     //----------------------------------------------------------
                     //find max
 					// Principe : on commande un DELTA déplacement, on laisse
-					//   compter et on regarde si le compteur est égal
+					//   compter et on regarde si le compteur du capteur optique est égal
 					//   à ref +/- une petite erreur autorisée
 					//   Si oui alors on recommence sinon on doit etre en butee
 					
