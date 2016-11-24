@@ -106,7 +106,7 @@ int compteur(0); //variable compteur d'impulsions
                 
 int compteurRef(0);
 int amplitude(0);
-int resultatAmplitudeMax[NBRCYCLE_AR]; //en unité roue dodeuse
+int resultatAmplitudeMax[NBRCYCLE_AR]; //en unité roue codeuse (quasi des degré)
 long resultatTempsMax[NBRCYCLE_AR];
 int resultatMaxServo[NBRCYCLE_AR]; // en ServoUnit (us)
 int resultatAmplitudeMin[NBRCYCLE_AR];
