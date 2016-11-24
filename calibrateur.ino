@@ -342,8 +342,9 @@ defineTask(reflechi,250)
                     for (i=0;i<NBRCYCLE_AR;i=i+1){
                         compteur=compteurRef;
                         amplitude=0;
+						Serial.print(F("Cycle recherche MAX n ") );Serial.println(1+i);
                         while (abs(compteurRef-compteur)<ERREURCOMPTAGE) {
-                            Serial.print(F("Cycle recherche MAX n°") );Serial.println(i);
+                            
                             Serial.print(F("M+....."));
                             compteur=0;
                             //objTest=objTest+DELTA;
@@ -354,10 +355,10 @@ defineTask(reflechi,250)
                             Serial.print(F(" amplitude="));Serial.println(amplitude);
                         }
                         amplitude=amplitude-abs(compteur)	;
-                        resultatAmplitudeMax[i] = amplitude ;
+                        //resultatAmplitudeMax[i] = amplitude ;
                         resultatMaxServo[i]= leServo.getObjectif()-DELTA;
-                        Serial.print(F(", amplitude retenue =") );Serial.println(amplitude);
-                    }
+                        Serial.print(F(", amplitude en cours retenue =") );Serial.println(amplitude);
+                    //}
 					//Serial.print(" amplitude retenue=");Serial.println(amplitude);	
                     //leServo.setMax(leServo.getObjectif()-DELTA);
                     leServo.setMax( (int) moyenne( NBRCYCLE_AR, resultatMaxServo ) );
@@ -367,12 +368,13 @@ defineTask(reflechi,250)
                     sleep(TEMPOSLEEP);
                     //----------------------------------------------------------
                     //find mmin
-                    for (i=0;i<NBRCYCLE_AR;i=i+1){                    
+                   // for (i=0;i<NBRCYCLE_AR;i=i+1){                    
                         compteur=-compteurRef;
+						Serial.print(F("Cycle recherche MIN n ") );Serial.println(i+1);
                         while (abs(-compteurRef-compteur)<ERREURCOMPTAGE){
                         // inversion du signe de compteur ref car on change de sens
                         // de rotation (par rapport au sens de recherche de compteur ref)
-                            Serial.print(F("Cycle recherche MIN n°") );Serial.println(i);                       
+                                                   
                             Serial.print(F("M-......"));
                             compteur=0;
                             //objTest=objTest-DELTA;
@@ -386,6 +388,11 @@ defineTask(reflechi,250)
                         resultatAmplitudeMin[i] = amplitude ;
                         resultatMinServo[i]= leServo.getObjectif()+DELTA; 
                         Serial.print(F(", amplitude retenue =") );Serial.println(amplitude);
+						leServo.setObjectif(leServo.getMilieu());
+                    
+						Serial.println("retourneMilieu");
+						sleep(TEMPOSLEEP);
+						Serial.println(F("*************************************") );
                     }
                     //leServo.setMin(leServo.getObjectif()+DELTA);
                     leServo.setMin((int) moyenne( NBRCYCLE_AR, resultatMinServo ));
@@ -396,9 +403,12 @@ defineTask(reflechi,250)
                     leServo.setObjectif(leServo.getMin());
                     //----------------------------------------------------------
                     //Amplitude angulaire exprimee en unite de roue codeuse
-					amplitude = moyenne( NBRCYCLE_AR, resultatAmplitudeMax );
-                    amplitude += moyenne( NBRCYCLE_AR, resultatAmplitudeMin );
-                    //----------------------------------------------------------
+					//amplitude = moyenne( NBRCYCLE_AR, resultatAmplitudeMax );
+                    amplitude = moyenne( NBRCYCLE_AR, resultatAmplitudeMin );
+					Serial.println(F("=============") );
+					Serial.print(F("amplitude moyenne retenue =") );Serial.println(amplitude);
+                    Serial.println(F("=============") );
+					//----------------------------------------------------------
                     //séquence pour mesurer une vitesse et amplitude moyenne
                     //(10 cycles d'aller et retour de min à max
                     //et enregistrement systématique des mesures)
