@@ -47,6 +47,7 @@ bool servoTest::isMax()         { return(_enCours==_max); }
 void servoTest::setType(bool type)
   {
     _type=type;
+	
     if (type)
 		{
 			_min=500;   //1000
@@ -58,6 +59,7 @@ void servoTest::setType(bool type)
 			_objectif=_milieu; 
 			_myServo.attach(_pin);       
 		}
+		
     else
        {
 			_min=300;
@@ -70,6 +72,7 @@ void servoTest::setType(bool type)
 			_carteAda.begin();
 			_carteAda.setPWMFreq(50); 
 		}
+		
 }
     
 //void servoTest::setPotence()

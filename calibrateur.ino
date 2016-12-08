@@ -6,6 +6,16 @@
 # 
 # Program principal:
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+si probleme "defined in discarded section" trouver wiring.c (sur 2 PC différent se trouve à 2 endroit différend le pister grace au wiring.c.d qui est fabriquer au moment de la compil)
+et ajouter l'attribut :
+
+__attribute__((used)) volatile unsigned long timer0_overflow_count = 0;
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 //a faire pour prochaine fois : pendant les grandes course vérifier si avec le nouveauc compteur qui peut etre négatif ça marche bien. 
 autre point de suspissionde bug : la vitesse qui est trop élevé et que le servo n'arrive pas à suivre.--> il suffit de baisser VITESSEMAXSERVO (passé de 3500 à 2500)
@@ -19,6 +29,8 @@ Avec 100 on a des comportement louche lors des cycles de fin
 (le servo bouge apeine sur certains des cycle a la palce d'un grand débatement)
 // a faire : comprendre pourquoi les vitesses sont pas les memes selon les modes.
 //corriger le calcul de l'ecart type
+
+//A Faire : vérifier l'utilité voir les errreur commise par tempo sleep avant les yop et les yup
 
 
 #*******************************************************************************
@@ -51,7 +63,7 @@ Avec 100 on a des comportement louche lors des cycles de fin
 #define PINVOIEB 3 //la pin surlaquelle est branché la voie B
 #define ERREURCOMPTAGE 6 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
-#define TEMPO_STAT 50 // tempo pour laisser le servo avancer lors des mesures
+#define TEMPO_STAT 40 // tempo pour laisser le servo avancer lors des mesures
                        // statistique à la fin de la calibration ATTENTION 100ms semble etre trop court!!!!
 #define DEP_MINI_STAT 5  //correspond au déplacement minimum en nombre d'impulsion que doit faire le servo pour 
 						//considérer qu'il n' pas encore atteint sa fin de course et que l'on peut laisser le chronometre en 
@@ -105,10 +117,10 @@ int compteur(0); //variable compteur d'impulsions
                 
 int compteurRef(0);
 int amplitude(0);
-int resultatAmplitudeMax[NBRCYCLE_AR]; //en unité roue codeuse (quasi des degré)
+//int resultatAmplitudeMax[NBRCYCLE_AR]; 
 long resultatTempsMax[NBRCYCLE_AR];
 int resultatMaxServo[NBRCYCLE_AR]; // en ServoUnit (us)
-int resultatAmplitudeMin[NBRCYCLE_AR];
+int resultatAmplitude[NBRCYCLE_AR]; //en unité roue codeuse (quasi des degré)
 long resultatTempsMin[NBRCYCLE_AR];
 int resultatMinServo[NBRCYCLE_AR]; // en ServoUnit (us)
 
@@ -222,28 +234,39 @@ defineTask(reflechi,250)
   AFFICHEADAFRUIT,
   AFFICHECLASSIQUE
   */
+  
     {
+		
     byte i;
         //Test de changement de servo moteur ADAFRUIT ou NORMAL
         if (boutonP.hasBeenLongClicked())
             { 
+				
                 dateChangeServo=(millis());
                 changeTypeServo=true;
+				
                 if (leServo.getType())
                     {
                         leServo.setType(false);
+						
                         affichage.affiche(AFFICHEADAFRUIT);
                         Serial.println(F("servo de type Adafruit"));
                     }
                 else
+					
                     {
                         leServo.setType(true);
                         affichage.affiche(AFFICHECLASSIQUE);
                         Serial.println(F("servo de type Classique"));
+					
                     }
+					
                 //sleep( 3000);
                 boutonP.acquit();
+				
             }
+			
+		
         //Affichage du nouveau type de servo moteur pendant 3s
         if (millis()>dateChangeServo+3000 && changeTypeServo)
             {
@@ -383,7 +406,7 @@ defineTask(reflechi,250)
                             Serial.print(F(" amplitude="));Serial.println(amplitude);
                         }
                         amplitude=amplitude-abs(compteur)	;
-                        resultatAmplitudeMin[i] = amplitude ;
+                        resultatAmplitude[i] = amplitude ;
                         resultatMinServo[i]= leServo.getObjectif()+DELTA; 
 						leServo.setObjectif(leServo.getObjectif()+DELTA);
                         Serial.print(F(", amplitude retenue =") );Serial.println(amplitude);
@@ -397,11 +420,11 @@ defineTask(reflechi,250)
                     Serial.println(F("=============") );
 					leServo.setMax( (int) moyenne( NBRCYCLE_AR, resultatMaxServo ) );
                     Serial.print("MAX="); Serial.print(leServo.getMax());
-					Serial.print(F("  (ecart type : "));
+					Serial.print(F(" usec d'angle (PWM)  (ecart type : "));
                     Serial.println(ecartType(NBRCYCLE_AR,resultatMaxServo));
 					leServo.setMin((int) moyenne( NBRCYCLE_AR, resultatMinServo ));
                     Serial.print("MIN="); Serial.print(leServo.getMin());
-					Serial.print(F("  (ecart type : "));
+					Serial.print(F(" usec d'angle (PWM)  (ecart type : "));
                     Serial.println(ecartType(NBRCYCLE_AR,resultatMinServo));
                     
                     
@@ -410,11 +433,11 @@ defineTask(reflechi,250)
 
                     //Amplitude angulaire exprimee en unite de roue codeuse
 					//amplitude = moyenne( NBRCYCLE_AR, resultatAmplitudeMax );
-                    amplitude = moyenne( NBRCYCLE_AR, resultatAmplitudeMin );
+                    amplitude = moyenne( NBRCYCLE_AR, resultatAmplitude );
 					
 					Serial.print(F("amplitude moyenne retenue =") );Serial.print(amplitude);
-					Serial.print(F("  (ecart type : "));
-                    Serial.println(ecartType(NBRCYCLE_AR,resultatAmplitudeMin));
+					Serial.print(F(" impuslion de la fourche optique  (ecart type : "));
+                    Serial.println(ecartType(NBRCYCLE_AR,resultatAmplitude));
 					
                     Serial.println(F("=============") );
 					
@@ -435,7 +458,7 @@ defineTask(reflechi,250)
                             Serial.println(tempsMesureVitesse);
                             // Mesure de min vers max
                             leServo.setObjectif(leServo.getMax());
-                            sleep(TEMPO_SLEEP);
+                            sleep(TEMPOSLEEP);
                             Serial.print("cmpt="); Serial.println(compteur);
                             while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
                                 {
@@ -457,11 +480,11 @@ defineTask(reflechi,250)
                              Serial.print("tempsMesureVitesse=");
                             Serial.println(tempsMesureVitesse);
                             leServo.setObjectif(leServo.getMin());
-                            sleep(TEMPO_SLEEP);
+                            sleep(TEMPOSLEEP);
                             Serial.print("cmpt="); Serial.println(compteur);
                             while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
                                 {
-                                    compteurRef=compteur;
+                                    
                                     Serial.print("yup ");
                                     Serial.print("cmpt=");
                                     Serial.println(compteur);
@@ -501,20 +524,20 @@ defineTask(reflechi,250)
                 case DISPRESULT:  
                     
                     
-                    Serial.print(F(" Dans le sens croissant pwm, moyenne : "));
-                    Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitudeMax));
-                    Serial.print(F(" impulsions (Ecart type : "));
-                    Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitudeMax));
-                    Serial.print(F(") atteintes en un temps moyen de : "));
+                    Serial.print(F(" Dans le sens croissant pwm "));
+                    //Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitudeMax));
+                    //Serial.print(F(" impulsions (Ecart type : "));
+                    //Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitudeMax));
+                    Serial.print(F(") l'amplitude est atteintes en un temps moyen de : "));
                     Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMax));
                     Serial.print(F(" ms (ecart type : "));
                     Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMax));
                     Serial.println(F(" ms)"));
-                    Serial.print(F(" Dans le sens decroissant pwm, moyenne  : "));
-                    Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitudeMin));
-                    Serial.print(F("impulsions (Ecart type : "));
-                    Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitudeMin));
-                    Serial.print(F(") atteintes en un temps moyen de : "));
+                    Serial.print(F(" Dans le sens decroissant pwm  : "));
+                    //Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitude));
+                    //Serial.print(F("impulsions (Ecart type : "));
+                    //Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitude));
+                    Serial.print(F(") l'amplitude est atteintes en un temps moyen de : "));
                     Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMin));
                     Serial.print(F(" ms (ecart type : "));
                     Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMin));
@@ -672,7 +695,9 @@ void setup()
     Wire.begin();
 
     Serial.println("hello");
-    mySCoop.start();
+    
+	mySCoop.start();
+	
     temp=millis();
     //etatCalibrateur=3; fait dans l'init de la variable
     affichage.affiche(POTAR);
@@ -696,7 +721,7 @@ int freeRam () {
          
 void loop ()
 {
-    mySCoop.sleep(1);
+    	mySCoop.sleep(1);
     /*
 	if (millis()>5000+temp)
         {
