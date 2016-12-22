@@ -8,7 +8,7 @@
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-si probleme "defined in discarded section" trouver wiring.c (sur 2 PC différent se trouve à 2 endroit différend le pister grace au wiring.c.d qui est fabriquer au moment de la compil)
+si probleme à la compilation "defined in discarded section" trouver wiring.c (sur 2 PC différent se trouve à 2 endroit différend le pister grace au wiring.c.d qui est fabriquer au moment de la compil)
 et ajouter l'attribut :
 
 __attribute__((used)) volatile unsigned long timer0_overflow_count = 0;
@@ -17,18 +17,7 @@ __attribute__((used)) volatile unsigned long timer0_overflow_count = 0;
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-//a faire pour prochaine fois : pendant les grandes course vérifier si avec le nouveauc compteur qui peut etre négatif ça marche bien. 
-autre point de suspissionde bug : la vitesse qui est trop élevé et que le servo n'arrive pas à suivre.--> il suffit de baisser VITESSEMAXSERVO (passé de 3500 à 2500)
-// vérifier que 1 impulsion = 0,5°
-// améliorer la mesure de vitesse à la fin
 
-//a faire : faire un réinit propre car si on fait 2 étalonnage à la suite ca marche pas
-
-//a faire tester repetabilité avec tempo à 100 et à 200.
-Avec 100 on a des comportement louche lors des cycles de fin 
-(le servo bouge apeine sur certains des cycle a la palce d'un grand débatement)
-// a faire : comprendre pourquoi les vitesses sont pas les memes selon les modes.
-//corriger le calcul de l'ecart type
 
 //A Faire : vérifier l'utilité voir les errreur commise par tempo sleep avant les yop et les yup
 
@@ -60,7 +49,7 @@ Avec 100 on a des comportement louche lors des cycles de fin
 #define TEMPOSLEEP 1000
 //en ms le temps d'etre sur que le servo ait bougé 
 //d'un increment quand on fait les mesure à la roue codeuse
-#define PINVOIEB 3 //la pin surlaquelle est branché la voie B
+#define PINVOIEB 3 //la pin surlaquelle est branché la voie B de la roue codeuse
 #define ERREURCOMPTAGE 6 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
 #define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
 #define TEMPO_STAT 40 // tempo pour laisser le servo avancer lors des mesures
@@ -352,7 +341,7 @@ defineTask(reflechi,250)
                     }
                     break;
                 case FINDMINMAX: 
-                    //Serial.println("lalalal");
+                    
                     //sequence pour aller au max puis au min et de déterminer
                     //les pwm Min et Max du servo
                     //----------------------------------------------------------
@@ -369,7 +358,7 @@ defineTask(reflechi,250)
                             
                             Serial.print(F("M+....."));
                             compteur=0;
-                            //objTest=objTest+DELTA;
+                    
                             leServo.setObjectif(leServo.getObjectif()+DELTA);
                             sleep(TEMPOSLEEP);
                             Serial.print(F(" cmptr=")); Serial.print(compteur);
@@ -377,19 +366,15 @@ defineTask(reflechi,250)
                             Serial.print(F(" amplitude="));Serial.println(amplitude);
                         }
                         amplitude=amplitude-abs(compteur)	;
-                        //resultatAmplitudeMax[i] = amplitude ;
+                    
                         resultatMaxServo[i]= leServo.getObjectif()-DELTA;
                         Serial.print(F(", amplitude en cours retenue =") );Serial.println(amplitude);
-                    //}
-					//Serial.print(" amplitude retenue=");Serial.println(amplitude);	
-                    //leServo.setMax(leServo.getObjectif()-DELTA);
                     
 					leServo.setObjectif(leServo.getMilieu());
                     Serial.println("retourneMilieu");
                     sleep(TEMPOSLEEP);
                     //----------------------------------------------------------
-                    //find mmin
-                   // for (i=0;i<NBRCYCLE_AR;i=i+1){                    
+                    
                         compteur=-compteurRef;
 						Serial.print(F("Cycle recherche MIN n ") );Serial.println(i+1);
                         while (abs(-compteurRef-compteur)<ERREURCOMPTAGE){
@@ -398,7 +383,7 @@ defineTask(reflechi,250)
                                                    
                             Serial.print(F("M-......"));
                             compteur=0;
-                            //objTest=objTest-DELTA;
+                    
                             leServo.setObjectif(leServo.getObjectif()-DELTA);
                             sleep(TEMPOSLEEP); 
                             Serial.print(F(" cmptr=")); Serial.print(compteur);
@@ -416,7 +401,7 @@ defineTask(reflechi,250)
 						sleep(TEMPOSLEEP);
 						Serial.println(F("*************************************") );
                     }
-                    //leServo.setMin(leServo.getObjectif()+DELTA);
+
                     Serial.println(F("=============") );
 					leServo.setMax( (int) moyenne( NBRCYCLE_AR, resultatMaxServo ) );
                     Serial.print("MAX="); Serial.print(leServo.getMax());
@@ -675,7 +660,7 @@ void setup()
   int vitesseDinit;    
   pinMode(PINVOIEB, INPUT);      
     Serial.begin(57600);
-    //potence.setPotence(); 
+
   lePotar.init();
     leServo.setType(true);
   EEPROM.get(ADRESSE_EEPROM, vitesseDinit);
