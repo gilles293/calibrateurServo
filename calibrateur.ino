@@ -14,6 +14,8 @@ et ajouter l'attribut :
 __attribute__((used)) volatile unsigned long timer0_overflow_count = 0;
 
 
+RAF verif affichage LCD, verif fonctionnement avec Adafruit, ecrire Mode d'emploi
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -664,7 +666,7 @@ void setup()
   lePotar.init();
     leServo.setType(true);
   EEPROM.get(ADRESSE_EEPROM, vitesseDinit);
- // Serial.print("vitesse lu=");Serial.println(vitesseDinit);
+
   if (vitesseDinit<=VITESSEMAXSERVO && vitesseDinit>=0)
     {leServo.setVitesse(vitesseDinit);
     Serial.print("vitesse EEPROM=");

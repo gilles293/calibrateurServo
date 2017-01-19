@@ -5,8 +5,8 @@
 # Auteurs: Gille De Bussy
 # 
 # class servo:
-# permet de piloter les servo qui sont utilises sur le proet
-# servo en test mais aussi servo de la potence
+# permet de piloter les servo qui sont utilises sur le projet
+# 
 # utilise la librairie servo de chez Adafruit pour la carte
 Adafruit 16-Channel 12-bit PWM/Servo Driver - I2C interface - PCA9685
 PRODUCT ID: 815
