@@ -51,9 +51,9 @@ RAF verif affichage LCD, verif fonctionnement avec Adafruit, ecrire Mode d'emplo
 #define TEMPOSLEEP 1000
 //en ms le temps d'etre sur que le servo ait bougé 
 //d'un increment quand on fait les mesure à la roue codeuse
-#define PINVOIEB 3 //la pin surlaquelle est branché la voie B de la roue codeuse
+#define PINVOIEB 3 //la pin sur laquelle est branché la voie B de la roue codeuse
 #define ERREURCOMPTAGE 6 //la tolérance de comptage avant que l'on estime que le servo est arrivé au bout
-#define NBRCYCLE_AR 10 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
+#define NBRCYCLE_AR 4 //nbre de cycle d'aller et retour pour la fin des mesure de caractérisation et nbr de cycle pour la mesure des PWMIN et PWMMAX
 #define TEMPO_STAT 40 // tempo pour laisser le servo avancer lors des mesures
                        // statistique à la fin de la calibration ATTENTION 100ms semble etre trop court!!!!
 #define DEP_MINI_STAT 5  //correspond au déplacement minimum en nombre d'impulsion que doit faire le servo pour 
@@ -445,17 +445,17 @@ defineTask(reflechi,250)
                             Serial.println(tempsMesureVitesse);
                             // Mesure de min vers max
                             leServo.setObjectif(leServo.getMax());
-                            sleep(TEMPOSLEEP);
+                            //sleep(TEMPOSLEEP); inutile maintenant car on s'arrette quand compteur suffisament incrémenté'
                             Serial.print("cmpt="); Serial.println(compteur);
                             while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
                                 {
-                                    Serial.print("yop");
+                                   /*  Serial.print("yop");
                                     Serial.print(" cmpt=");
-                                    Serial.println(compteur);
+                                    Serial.println(compteur); */
                                     sleep(TEMPO_STAT);
                                 }
                             
-                            resultatTempsMax[i]=millis()-tempsMesureVitesse-\
+                            resultatTempsMax[i]=millis()-tempsMesureVitesse;//-\
                                                     TEMPO_STAT;
                             Serial.print(F("Cycle ")); Serial.print(i);
                             Serial.print(F(" temps= ")); Serial.println(resultatTempsMax[i]);
@@ -467,19 +467,19 @@ defineTask(reflechi,250)
                              Serial.print("tempsMesureVitesse=");
                             Serial.println(tempsMesureVitesse);
                             leServo.setObjectif(leServo.getMin());
-                            sleep(TEMPOSLEEP);
+                            //sleep(TEMPOSLEEP);
                             Serial.print("cmpt="); Serial.println(compteur);
                             while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
                                 {
                                     
-                                    Serial.print("yup ");
+                                    /*Serial.print("yup ");
                                     Serial.print("cmpt=");
-                                    Serial.println(compteur);
+                                    Serial.println(compteur);*/
                                     sleep(TEMPO_STAT);
                                 }
 
                             
-                            resultatTempsMin[i]=millis()-tempsMesureVitesse-TEMPO_STAT;
+                            resultatTempsMin[i]=millis()-tempsMesureVitesse;//-TEMPO_STAT;
                             Serial.print(F("Cycle "));
                             Serial.print(i);
                             Serial.print(F(" temps= "));
@@ -510,21 +510,19 @@ defineTask(reflechi,250)
 
                 case DISPRESULT:  
                     
-                    
-                    Serial.print(F(" Dans le sens croissant pwm "));
-                    //Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitudeMax));
-                    //Serial.print(F(" impulsions (Ecart type : "));
-                    //Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitudeMax));
-                    Serial.print(F(") l'amplitude est atteintes en un temps moyen de : "));
+                    leServo.setObjectif(leServo.getMilieu());
+                    Serial.print(F(" Dans le sens croissant pwm, "));
+                   
+                    Serial.print(F("l'amplitude retenue est atteintes en un temps moyen de : "));
                     Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMax));
                     Serial.print(F(" ms (ecart type : "));
                     Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMax));
                     Serial.println(F(" ms)"));
-                    Serial.print(F(" Dans le sens decroissant pwm  : "));
+                    Serial.print(F(" Dans le sens decroissant pwm, "));
                     //Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitude));
                     //Serial.print(F("impulsions (Ecart type : "));
                     //Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitude));
-                    Serial.print(F(") l'amplitude est atteintes en un temps moyen de : "));
+                    Serial.print(F("l'amplitude retenue est atteintes en un temps moyen de : "));
                     Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMin));
                     Serial.print(F(" ms (ecart type : "));
                     Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMin));
