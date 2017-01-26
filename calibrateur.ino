@@ -8,13 +8,17 @@
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-si probleme à la compilation "defined in discarded section" trouver wiring.c (sur 2 PC différent se trouve à 2 endroit différend le pister grace au wiring.c.d qui est fabriquer au moment de la compil)
+si probleme à la compilation "defined in discarded section" trouver wiring.c (sur 2 PC différent se 
+trouve à 2 endroit différend. Le pister
+ grace au wiring.c.d (dont on connait la position en mettant l'interface arduino en mode bavard au moment de la compilation)
+ qui est fabriqué au moment de la compil)
 et ajouter l'attribut :
 
 __attribute__((used)) volatile unsigned long timer0_overflow_count = 0;
 
 
 RAF verif affichage LCD, verif fonctionnement avec Adafruit, ecrire Mode d'emploi
+poursuivre modif code pour delta dynamique en fonction de ADAFRUIT ou CLASSIQUE
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -47,7 +51,8 @@ RAF verif affichage LCD, verif fonctionnement avec Adafruit, ecrire Mode d'emplo
 #include "potar.h"
 
 //------------------------------------------------------------------------------
-#define DELTA 150 // en servo unit (en microseconde de servo)
+#define DELTACLASSIQUE 150 // en servo unit (en microseconde de servo)
+#define DELTAADAFRUIT 50 // en quantum sur 4096 bit
 #define TEMPOSLEEP 1000
 //en ms le temps d'etre sur que le servo ait bougé 
 //d'un increment quand on fait les mesure à la roue codeuse
@@ -102,7 +107,7 @@ servoTest leServo(PINSERVO);
 //servoTest potence(11);
 unsigned long dateChangeServo;
 bool changeTypeServo(false);
-
+int delta(0);
 int compteur(0); //variable compteur d'impulsions
                 //mise à jour par interruptions
                 
@@ -239,7 +244,7 @@ defineTask(reflechi,250)
                 if (leServo.getType())
                     {
                         leServo.setType(false);
-						
+						delta=DELTAADAFRUIT;
                         affichage.affiche(AFFICHEADAFRUIT);
                         Serial.println(F("servo de type Adafruit"));
                     }
@@ -249,6 +254,7 @@ defineTask(reflechi,250)
                         leServo.setType(true);
                         affichage.affiche(AFFICHECLASSIQUE);
                         Serial.println(F("servo de type Classique"));
+						delta=DELTACLASSIQUE;
 					
                     }
 					
@@ -311,7 +317,7 @@ defineTask(reflechi,250)
                         //mesure milieu+delta, tempo, get_compteur
 						//milieu, tempo, raz_compteur
 						Serial.print(F("iteration de mesure de ref="));
-                        leServo.setObjectif(leServo.getMilieu()+DELTA);
+                        leServo.setObjectif(leServo.getMilieu()+delta);
                         sleep(TEMPOSLEEP);
                         mesureRef[i]=compteur;
                         leServo.setObjectif(leServo.getMilieu());
@@ -337,7 +343,7 @@ defineTask(reflechi,250)
                     {
                         Serial.println(F("ce serait bien que la marge d'erreur soit de l'ordre de 30% de la mesure de reference"));
                         Serial.println(F("je vais faire autre chose.... Programme a recompiler"));
-                        Serial.println(F("modifier macro ERREURCOMPTAGE et DELTA"));
+                        Serial.println(F("modifier macro ERREURCOMPTAGE et DELTAADAFRUIT ou DELTACLASSIQUE"));
                         etatCalibrateur=POTAR;
                         affichage.affiche(POTAR);
                     }
@@ -348,7 +354,7 @@ defineTask(reflechi,250)
                     //les pwm Min et Max du servo
                     //----------------------------------------------------------
                     //find max
-					// Principe : on commande un DELTA déplacement, on laisse
+					// Principe : on commande un delta déplacement, on laisse
 					//   compter et on regarde si le compteur du capteur optique est égal
 					//   à ref +/- une petite erreur autorisée
 					//   Si oui alors on recommence sinon on doit etre en butee
@@ -361,7 +367,7 @@ defineTask(reflechi,250)
                             Serial.print(F("M+....."));
                             compteur=0;
                     
-                            leServo.setObjectif(leServo.getObjectif()+DELTA);
+                            leServo.setObjectif(leServo.getObjectif()+delta);
                             sleep(TEMPOSLEEP);
                             Serial.print(F(" cmptr=")); Serial.print(compteur);
                             amplitude=amplitude+abs(compteur);
@@ -369,7 +375,7 @@ defineTask(reflechi,250)
                         }
                         amplitude=amplitude-abs(compteur)	;
                     
-                        resultatMaxServo[i]= leServo.getObjectif()-DELTA;
+                        resultatMaxServo[i]= leServo.getObjectif()-delta;
                         Serial.print(F(", amplitude en cours retenue =") );Serial.println(amplitude);
                     
 					leServo.setObjectif(leServo.getMilieu());
@@ -386,7 +392,7 @@ defineTask(reflechi,250)
                             Serial.print(F("M-......"));
                             compteur=0;
                     
-                            leServo.setObjectif(leServo.getObjectif()-DELTA);
+                            leServo.setObjectif(leServo.getObjectif()-delta);
                             sleep(TEMPOSLEEP); 
                             Serial.print(F(" cmptr=")); Serial.print(compteur);
                             amplitude=amplitude+abs(compteur);
@@ -394,8 +400,8 @@ defineTask(reflechi,250)
                         }
                         amplitude=amplitude-abs(compteur)	;
                         resultatAmplitude[i] = amplitude ;
-                        resultatMinServo[i]= leServo.getObjectif()+DELTA; 
-						leServo.setObjectif(leServo.getObjectif()+DELTA);
+                        resultatMinServo[i]= leServo.getObjectif()+delta; 
+						leServo.setObjectif(leServo.getObjectif()+delta);
                         Serial.print(F(", amplitude retenue =") );Serial.println(amplitude);
 						leServo.setObjectif(leServo.getMilieu());
                     
@@ -511,7 +517,19 @@ defineTask(reflechi,250)
                 case DISPRESULT:  
                     
                     leServo.setObjectif(leServo.getMilieu());
-                    Serial.print(F(" Dans le sens croissant pwm, "));
+					if (leServo.getType())
+					{
+					Serial.println(F(" Servo CLASSIQUE)"));	
+					}
+					else
+					{
+						Serial.println(F(" Servo ADAFRUIT)"));
+					}
+					
+                    
+					
+					
+					Serial.print(F(" Dans le sens croissant pwm, "));
                    
                     Serial.print(F("l'amplitude retenue est atteintes en un temps moyen de : "));
                     Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMax));
@@ -663,6 +681,7 @@ void setup()
 
   lePotar.init();
     leServo.setType(true);
+	delta=DELTACLASSIQUE;
   EEPROM.get(ADRESSE_EEPROM, vitesseDinit);
 
   if (vitesseDinit<=VITESSEMAXSERVO && vitesseDinit>=0)

@@ -48,7 +48,7 @@ void servoTest::setType(bool type)
   {
     _type=type;
 	
-    if (type)
+    if (type)//servo classique
 		{
 			_min=500;   //1000
 			_max=2500; //2000 en principe mais la référence Arduino
@@ -60,10 +60,10 @@ void servoTest::setType(bool type)
 			_myServo.attach(_pin);       
 		}
 		
-    else
+    else //servo adafruit
        {
-			_min=300;
-			_max=400;
+			_min=100;
+			_max=1000;
 			_milieu=(_min+_max)/2;
 			_vitesse=50; //JSO : resolution de conflit 3000 to 50
 			_enCours=_milieu+1;
