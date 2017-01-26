@@ -328,10 +328,12 @@ defineTask(reflechi,250)
                     etatCalibrateur=FINDMINMAX;
 					//Affichage de ce resultat
                     compteurRef=moyenne(NBRCYCLE_AR,mesureRef);
-                    Serial.print(F(" SUPERcmpteurRefMoyenne="));
+                    Serial.print(F(" SUPERcmpteurRefMoyenne vue à la fourche optique = "));
                     Serial.print(compteurRef);
                     Serial.print(F(" (ecart type : "));
                     Serial.println(ecartType(NBRCYCLE_AR,mesureRef));
+					Serial.println(F(" ) "));
+					Serial.println();
 					// 2 petites vérification ref <> 0 et ref pqs trop petit
                     if (compteurRef==0)
                         {
@@ -369,14 +371,34 @@ defineTask(reflechi,250)
                     
                             leServo.setObjectif(leServo.getObjectif()+delta);
                             sleep(TEMPOSLEEP);
-                            Serial.print(F(" cmptr=")); Serial.print(compteur);
+							if (leServo.getType())
+							{
+							Serial.print(F(" PWM =")); Serial.print(leServo.getObjectif());
+                            Serial.print(F("usec,  cmptr fourche optique=")); Serial.print(compteur);	
+							}
+							else
+							{
+							Serial.print(F(" quantum sur 4096 =")); Serial.print(leServo.getObjectif());
+                            Serial.print(F("usec,  cmptr fourche optique=")); Serial.print(compteur);	
+							}
+							
                             amplitude=amplitude+abs(compteur);
-                            Serial.print(F(" amplitude="));Serial.println(amplitude);
+                            Serial.print(F(" amplitude fourche optique="));Serial.println(amplitude);
                         }
                         amplitude=amplitude-abs(compteur)	;
                     
                         resultatMaxServo[i]= leServo.getObjectif()-delta;
-                        Serial.print(F(", amplitude en cours retenue =") );Serial.println(amplitude);
+                        Serial.print(F(" Amplitude max fourche optique par rapport au milieu retenue =") );Serial.println(amplitude);
+						if (leServo.getType())
+							{
+							Serial.print(F(" PWM Max retenue =")); Serial.print(resultatMaxServo[i]);
+                            Serial.println(F("usec"))	
+							}
+							else
+							{
+							Serial.println(F(" quantum Max sur 4096 retenue=")); Serial.print(resultatMaxServo[i]);
+                            	
+							}
                     
 					leServo.setObjectif(leServo.getMilieu());
                     Serial.println("retourneMilieu");
@@ -394,15 +416,38 @@ defineTask(reflechi,250)
                     
                             leServo.setObjectif(leServo.getObjectif()-delta);
                             sleep(TEMPOSLEEP); 
-                            Serial.print(F(" cmptr=")); Serial.print(compteur);
+                            if (leServo.getType())
+							{
+							Serial.print(F(" PWM =")); Serial.print(leServo.getObjectif());
+                            Serial.print(F("usec,  cmptr fourche optique=")); Serial.print(compteur);	
+							}
+							else
+							{
+							Serial.print(F(" quantum sur 4096 =")); Serial.print(leServo.getObjectif());
+                            Serial.print(F("usec,  cmptr fourche optique=")); Serial.print(compteur);	
+							}
                             amplitude=amplitude+abs(compteur);
                             Serial.print(F(" amplitude="));Serial.println(amplitude);
                         }
                         amplitude=amplitude-abs(compteur)	;
                         resultatAmplitude[i] = amplitude ;
-                        resultatMinServo[i]= leServo.getObjectif()+delta; 
+                        resultatMinServo[i]= leServo.getObjectif()+delta;
 						leServo.setObjectif(leServo.getObjectif()+delta);
-                        Serial.print(F(", amplitude retenue =") );Serial.println(amplitude);
+                        
+						
+						Serial.print(F(" Amplitude min fourche optique par rapport au milieu retenue =") );Serial.println(amplitude);
+						if (leServo.getType())
+							{
+							Serial.print(F(" PWM Min retenue =")); Serial.print(resultatMaxServo[i]);
+                            Serial.println(F("usec"))	
+							}
+							else
+							{
+							Serial.println(F(" quantum Min sur 4096 retenue=")); Serial.print(resultatMaxServo[i]);
+                            	
+							}
+						
+						
 						leServo.setObjectif(leServo.getMilieu());
                     
 						Serial.println("retourneMilieu");
@@ -412,14 +457,44 @@ defineTask(reflechi,250)
 
                     Serial.println(F("=============") );
 					leServo.setMax( (int) moyenne( NBRCYCLE_AR, resultatMaxServo ) );
-                    Serial.print("MAX="); Serial.print(leServo.getMax());
-					Serial.print(F(" usec d'angle (PWM)  (ecart type : "));
-                    Serial.println(ecartType(NBRCYCLE_AR,resultatMaxServo));
-					leServo.setMin((int) moyenne( NBRCYCLE_AR, resultatMinServo ));
-                    Serial.print("MIN="); Serial.print(leServo.getMin());
-					Serial.print(F(" usec d'angle (PWM)  (ecart type : "));
-                    Serial.println(ecartType(NBRCYCLE_AR,resultatMinServo));
                     
+					if (leServo.getType())
+							{
+							Serial.print("PWM MAX retenue vue l'ensemble des cycles ="); Serial.print(leServo.getMax());
+							Serial.print(F(" usec d'angle   (ecart type : "));
+							}
+							else
+							{
+							Serial.print("Quantum MAX retenue vue l'ensemble des cycles ="); Serial.print(leServo.getMax());
+							Serial.print(F(" sur 4096   (ecart type : "));	
+							}
+					
+					
+					
+					
+                    Serial.println(ecartType(NBRCYCLE_AR,resultatMaxServo));
+					Serial.print(F(")"));
+					leServo.setMin((int) moyenne( NBRCYCLE_AR, resultatMinServo ));
+					
+					
+					if (leServo.getType())
+							{
+							Serial.print("PWM Min retenue vue l'ensemble des cycles ="); Serial.print(leServo.getMin());
+							Serial.print(F(" usec d'angle   (ecart type : "));
+							}
+							else
+							{
+							Serial.print("Quantum Min retenue vue l'ensemble des cycles ="); Serial.print(leServo.getMin());
+							Serial.print(F(" sur 4096   (ecart type : "));	
+							}
+					
+					
+					
+					
+                   			
+					
+                    Serial.println(ecartType(NBRCYCLE_AR,resultatMinServo));
+                    Serial.print(F(")"));
                     
                     
                     //----------------------------------------------------------
@@ -428,15 +503,16 @@ defineTask(reflechi,250)
 					//amplitude = moyenne( NBRCYCLE_AR, resultatAmplitudeMax );
                     amplitude = moyenne( NBRCYCLE_AR, resultatAmplitude );
 					
-					Serial.print(F("amplitude moyenne retenue =") );Serial.print(amplitude);
-					Serial.print(F(" impuslion de la fourche optique  (ecart type : "));
+					Serial.print(F("amplitude moyenne retenue vue par la fourche optique = ") );Serial.print(amplitude);
+					Serial.print(F(" impulsions (ecart type : "));
                     Serial.println(ecartType(NBRCYCLE_AR,resultatAmplitude));
+					Serial.print(F(" )"));
 					
                     Serial.println(F("=============") );
 					
                     leServo.setObjectif(leServo.getMin());
 					sleep(TEMPOSLEEP);
-					Serial.println("la le servo est au min et va faire grande course");
+					Serial.println("en ce moment le servo est au min et va faire grande course plusieurs fois de suite pour déterminer la vitesse du servo");
 					//----------------------------------------------------------
                     //séquence pour mesurer une vitesse et amplitude moyenne
 
@@ -447,12 +523,12 @@ defineTask(reflechi,250)
                         {
                             compteur=0;
                             tempsMesureVitesse=millis();
-                            Serial.print("tempsMesureVitesse=");
-                            Serial.println(tempsMesureVitesse);
+                            //Serial.print("tempsMesureVitesse=");
+                            //Serial.println(tempsMesureVitesse);
                             // Mesure de min vers max
                             leServo.setObjectif(leServo.getMax());
                             //sleep(TEMPOSLEEP); inutile maintenant car on s'arrette quand compteur suffisament incrémenté'
-                            Serial.print("cmpt="); Serial.println(compteur);
+                            //Serial.print("cmpt="); Serial.println(compteur);
                             while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
                                 {
                                    /*  Serial.print("yop");
@@ -464,14 +540,15 @@ defineTask(reflechi,250)
                             resultatTempsMax[i]=millis()-tempsMesureVitesse;//-\
                                                     TEMPO_STAT;
                             Serial.print(F("Cycle ")); Serial.print(i);
-                            Serial.print(F(" temps= ")); Serial.println(resultatTempsMax[i]);
+                            Serial.print(F(" vers le max, temps= ")); Serial.print(resultatTempsMax[i]);
+							Serial.println(F(" ms "));
                         
                             compteur=0;
                             
                             tempsMesureVitesse=millis();
                             // Mesure de max vers min
-                             Serial.print("tempsMesureVitesse=");
-                            Serial.println(tempsMesureVitesse);
+                             //Serial.print("tempsMesureVitesse=");
+                            //Serial.println(tempsMesureVitesse);
                             leServo.setObjectif(leServo.getMin());
                             //sleep(TEMPOSLEEP);
                             Serial.print("cmpt="); Serial.println(compteur);
@@ -485,12 +562,14 @@ defineTask(reflechi,250)
                                 }
 
                             
+							
                             resultatTempsMin[i]=millis()-tempsMesureVitesse;//-TEMPO_STAT;
-                            Serial.print(F("Cycle "));
-                            Serial.print(i);
-                            Serial.print(F(" temps= "));
-                            Serial.println(resultatTempsMin[i]);
-							Serial.println();
+                            Serial.print(F("Cycle ")); Serial.print(i);
+                            Serial.print(F(" vers le max, temps= ")); Serial.print(resultatTempsMin[i]);
+							Serial.println(F(" ms "));
+							
+							Serial.println(F("********************************** "));
+                            
 							
                         } //fin for NBCYCLES
    
@@ -519,33 +598,34 @@ defineTask(reflechi,250)
                     leServo.setObjectif(leServo.getMilieu());
 					if (leServo.getType())
 					{
-					Serial.println(F(" Servo CLASSIQUE)"));	
+					Serial.println(F(" Servo CLASSIQUE"));	
 					}
 					else
 					{
-						Serial.println(F(" Servo ADAFRUIT)"));
+						Serial.println(F(" Servo ADAFRUIT"));
 					}
 					
                     
 					
 					
-					Serial.print(F(" Dans le sens croissant pwm, "));
+					Serial.print(F(" Dans le sens croissant, "));
                    
-                    Serial.print(F("l'amplitude retenue est atteintes en un temps moyen de : "));
+                    Serial.print(F("le max est atteint en un temps moyen de "));
                     Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMax));
                     Serial.print(F(" ms (ecart type : "));
                     Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMax));
                     Serial.println(F(" ms)"));
-                    Serial.print(F(" Dans le sens decroissant pwm, "));
+                    Serial.print(F(" Dans le sens decroissant , "));
                     //Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitude));
                     //Serial.print(F("impulsions (Ecart type : "));
                     //Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitude));
-                    Serial.print(F("l'amplitude retenue est atteintes en un temps moyen de : "));
+                    Serial.print(F("le min est atteint en un temps moyen de "));
                     Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMin));
                     Serial.print(F(" ms (ecart type : "));
                     Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMin));
                     Serial.println(F(" ms)"));
                     //potence.setObjectif(potence.getMax());
+					Serial.println();
                     Serial.println(F("si nouveau servo : doubleClic, si changement mode clic"));
                     etatCalibrateur=WAITCLIC2;               
                     break;
