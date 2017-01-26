@@ -52,7 +52,7 @@ poursuivre modif code pour delta dynamique en fonction de ADAFRUIT ou CLASSIQUE
 
 //------------------------------------------------------------------------------
 #define DELTACLASSIQUE 150 // en servo unit (en microseconde de servo)
-#define DELTAADAFRUIT 50 // en quantum sur 4096 bit
+#define DELTAADAFRUIT 30 // en quantum sur 4096 bit
 #define TEMPOSLEEP 1000
 //en ms le temps d'etre sur que le servo ait bougé 
 //d'un increment quand on fait les mesure à la roue codeuse

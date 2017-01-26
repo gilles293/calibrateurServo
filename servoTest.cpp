@@ -63,7 +63,7 @@ void servoTest::setType(bool type)
     else //servo adafruit
        {
 			_min=100;
-			_max=1000;
+			_max=500;
 			_milieu=(_min+_max)/2;
 			_vitesse=100; //JSO : resolution de conflit 3000 to 50
 			_enCours=_milieu+1;
