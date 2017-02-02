@@ -403,11 +403,11 @@ defineTask(reflechi,250)
                         spf(" PWM ="); sp(leServo.getObjectif());
                         spf("usec,  cmptr fourche optique= "); sp(compteur);	
                     } else {
-                        spf(" quantum sur 4096 ="); sp(leServo.getObjectif());
-                        spf("usec,  cmptr fourche optique="); spl(compteur);	
+                        spf(" pwmADF sur 4096 = "); sp(leServo.getObjectif());
+                        spf(", fourche optique : valeur instantanee = "); sp(compteur);	
                     }
                     amplitude=amplitude+abs(compteur);
-                    spf(" amplitude= ");spl(amplitude);
+                    spf(", valeur cumulee = ");spl(amplitude);
                 }
                 amplitude=amplitude-abs(compteur)	;
                 resultatAmplitude[i] = amplitude ;
@@ -416,11 +416,13 @@ defineTask(reflechi,250)
                 spf(" Amplitude min fourche optique par rapport au milieu retenue = " );
                 spl(amplitude);
                 if (leServo.getType()){
-                    spf(" PWM Min retenue = "); sp(resultatMaxServo[i]);
+                    // spf(" PWM Min retenue = "); sp(resultatMaxServo[i]);
+                    spf(" PWM Min retenue = "); sp(resultatMinServo[i]); //jso 02/02/17
                     spl("usec");	
                 } else {
-                    spf(" Quantum min ADF sur 4096 retenu = ");
-                    spl(resultatMaxServo[i]);
+                    spf(" pwmADF min ADF sur 4096 retenu = ");
+                    // spl(resultatMaxServo[i]);
+                    spl(resultatMinServo[i]); //jso 02/02/17
                 }
                 leServo.setObjectif(leServo.getMilieu());
                 spfl("Retourne au milieu");
@@ -434,7 +436,7 @@ defineTask(reflechi,250)
                 sp(leServo.getMax());
                 spf(" usec d'angle   (ecart type : ");
             } else {
-                sp("Quantum MAX retenue vue l'ensemble des cycles =");
+                sp("pwmADF MAX retenue vue l'ensemble des cycles = ");
                 sp(leServo.getMax());
                 spf(" sur 4096   (ecart type : ");	
             }
@@ -442,10 +444,10 @@ defineTask(reflechi,250)
             spfl(")");
             leServo.setMin((int) moyenne( NBRCYCLE_AR, resultatMinServo ));
             if (leServo.getType()){
-                Serial.print("PWM Min retenue vue l'ensemble des cycles ="); Serial.print(leServo.getMin());
-                Serial.print(F(" usec d'angle   (ecart type : "));
+                sp("PWM Min retenue vue l'ensemble des cycles ="); sp(leServo.getMin());
+                spf(" usec d'angle   (ecart type : ");
             } else {
-                spf("Quantum Min retenue vue l'ensemble des cycles =");
+                spf("pwmADF Min retenue vue l'ensemble des cycles =");
                 sp(leServo.getMin());
                 spf(" sur 4096   (ecart type : ");	
             }
@@ -492,9 +494,9 @@ defineTask(reflechi,250)
                     
                     resultatTempsMax[i]=millis()-tempsMesureVitesse;//-\
                                             TEMPO_STAT;
-                    Serial.print(F("Cycle ")); Serial.print(i);
-                    Serial.print(F(" vers le max, temps= ")); Serial.print(resultatTempsMax[i]);
-                    Serial.println(F(" ms "));
+                    spf("Cycle "); sp(i);
+                    spf(" vers le max, temps= "); Serial.print(resultatTempsMax[i]);
+                    spfl(" ms ");
                 
                     compteur=0;
                     
@@ -504,7 +506,7 @@ defineTask(reflechi,250)
                     //Serial.println(tempsMesureVitesse);
                     leServo.setObjectif(leServo.getMin());
                     //sleep(TEMPOSLEEP);
-                    Serial.print("cmpt="); Serial.println(compteur);
+                    //Serial.print("cmpt="); Serial.println(compteur);
                     while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
                         {
                             
@@ -517,11 +519,11 @@ defineTask(reflechi,250)
                     
                     
                     resultatTempsMin[i]=millis()-tempsMesureVitesse;//-TEMPO_STAT;
-                    Serial.print(F("Cycle ")); Serial.print(i);
-                    Serial.print(F(" vers le max, temps= ")); Serial.print(resultatTempsMin[i]);
-                    Serial.println(F(" ms "));
+                    spf("Cycle "); sp(i);
+                    spf(" vers le min, temps= "); sp(resultatTempsMin[i]);
+                    spfl(" ms ");
                     
-                    Serial.println(F("********************************** "));
+                    spfl("********************************** ");
                     
                     
                 } //fin for NBCYCLES
@@ -696,10 +698,10 @@ void setup(){
     EEPROM.get(ADRESSE_EEPROM, vitesseDinit);
     if (vitesseDinit<=VITESSEMAXSERVO && vitesseDinit>=0){
         leServo.setVitesse(vitesseDinit);
-        sp("vitesse EEPROM=");
+        sp("Vitesse EEPROM = ");
         spl(vitesseDinit);
     } else {
-        spl("emploi de la vitesse 300");
+        spl("Emploi de la vitesse par defaut : 300");
         leServo.setVitesse(300);
     }
 
