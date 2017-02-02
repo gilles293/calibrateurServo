@@ -74,6 +74,14 @@ poursuivre modif code pour delta dynamique en fonction de ADAFRUIT ou CLASSIQUE
 //ait le temps d'atteindre physiquement ses postion min et max
 #define PINSERVO 5 // pin arduino ou est branché le servo 
 
+//JSO le 26/01/2017
+//les suivantes pour aficher des valeurs numeriques
+#define sp(x) Serial.print( x )
+#define spl(x) Serial.println( x )
+//Pour l'affichage des chaines de caracteres
+#define spf(x) Serial.print( F(x) )
+#define spfl(x) Serial.println( F(x) )
+
 //------------------------------------------------------------------------------
 // Etats de la machine d'état
 enum {
@@ -217,10 +225,8 @@ defineTimerRun(surveillePotar,80)
 
 //------------------------------------------------------------------------------
 //La tache Scoop
-defineTask(reflechi,250)
-    void reflechi::setup(){ }
-    void reflechi::loop()
-    //defineTimerRun(reflechi,40)
+
+//Les affichages:  
 /*
   AFFICHERIEN,
   AFFICHEUSB,
@@ -230,582 +236,503 @@ defineTask(reflechi,250)
   AFFICHEADAFRUIT,
   AFFICHECLASSIQUE
   */
-  
-    {
-		
+
+//defineTimerRun(reflechi,40)
+defineTask(reflechi,250)
+    void reflechi::setup(){/*les setup de cette tache est vide*/ }
+    void reflechi::loop(){
+    
     byte i;
-        //Test de changement de servo moteur ADAFRUIT ou NORMAL
-        if (boutonP.hasBeenLongClicked())
-            { 
-				
-                dateChangeServo=(millis());
-                changeTypeServo=true;
-				
-                if (leServo.getType())
-                    {
-                        leServo.setType(false);
-						delta=DELTAADAFRUIT;
-                        affichage.affiche(AFFICHEADAFRUIT);
-                        Serial.println(F("servo de type Adafruit"));
-                    }
-                else
-					
-                    {
-                        leServo.setType(true);
-                        affichage.affiche(AFFICHECLASSIQUE);
-                        Serial.println(F("servo de type Classique"));
-						delta=DELTACLASSIQUE;
-					
-                    }
-					
-                //sleep( 3000);
-                boutonP.acquit();
-				
-            }
-			
-		
-        //Affichage du nouveau type de servo moteur pendant 3s
-        if (millis()>dateChangeServo+3000 && changeTypeServo)
-            {
-                affichage.affiche(etatCalibrateur);
-                changeTypeServo=false;
-            }
-
-        
-        switch (etatCalibrateur)
-            {
-                case USB :
-                    Serial.println(F(\
-          "Double Clic pour proceder a mesure via USB, sinon simple clic change de mode"));                              
-                    etatCalibrateur=ETALORSWEEP;
-                    break;
-
-                case ETALORSWEEP :
-                    if (boutonP.hasBeenClicked())
-                        {
-                            boutonP.acquit();
-                            etatCalibrateur=SWEEPTOMIN;
-                            affichage.affiche(SWEEPTOMIN);
-                            leServo.setObjectif(leServo.getMin());
-                            lePotar.acquit();
-                        }
-                 
-                    if (boutonP.hasBeenDoubleClicked())
-                    {
-                        boutonP.acquit();
-                        leServo.setVitesse(VITESSEMAXSERVO);
-						Serial.print("vitesse=");
-						Serial.println(VITESSEMAXSERVO);
-						Serial.print("tempo stat=");
-						Serial.println(TEMPO_STAT);
-                        leServo.setObjectif(leServo.getMilieu());
-         // pour etre certain qu'on part du milieu et que le servo 
-          //n'est pas n'importe ou suite à des manip de type sweep
-          //ou potar par ex
-                        //etatCalibrateur=LECTURE_OU_ECRITURE_EEEPROM;
-                        etatCalibrateur=MESREFPULSE;
-                    } 
-                    break;   
-
-                case MESREFPULSE:
-                //mesure des impulsions  de reference en provenance du capteur optique sur une rotation
-                //de delta faite X fois pour plus de certitude
-                    compteurRef=0;
-                    compteur=0;
-                    for (i=0;i<NBRCYCLE_AR;i=i+1)
-                    {
-                        //mesure milieu+delta, tempo, get_compteur
-						//milieu, tempo, raz_compteur
-						Serial.print(F("iteration de mesure de ref="));
-                        leServo.setObjectif(leServo.getMilieu()+delta);
-                        sleep(TEMPOSLEEP);
-                        mesureRef[i]=compteur;
-                        leServo.setObjectif(leServo.getMilieu());
-                        sleep(TEMPOSLEEP);
-                        compteur=0;
-                        Serial.println(mesureRef[i]);
-                    }
-                    etatCalibrateur=FINDMINMAX;
-					//Affichage de ce resultat
-                    compteurRef=moyenne(NBRCYCLE_AR,mesureRef);
-                    Serial.print(F(" SUPERcmpteurRefMoyenne vue à la fourche optique = "));
-                    Serial.print(compteurRef);
-                    Serial.print(F(" (ecart type : "));
-                    Serial.println(ecartType(NBRCYCLE_AR,mesureRef));
-					Serial.println(F(" ) "));
-					Serial.println();
-					// 2 petites vérification ref <> 0 et ref pqs trop petit
-                    if (compteurRef==0)
-                        {
-                            Serial.println(F("PB : compteur Ref=0 aucune impulsion fourche optique détecté"));
-                            Serial.println(F("retour au début de procédure"));
-                            etatCalibrateur=USB;
-                        }
-                    if (ERREURCOMPTAGE*3>abs(compteurRef))
-                    {
-                        Serial.println(F("ce serait bien que la marge d'erreur soit de l'ordre de 30% de la mesure de reference"));
-                        Serial.println(F("je vais faire autre chose.... Programme a recompiler"));
-                        Serial.println(F("modifier macro ERREURCOMPTAGE et DELTAADAFRUIT ou DELTACLASSIQUE"));
-                        etatCalibrateur=POTAR;
-                        affichage.affiche(POTAR);
-                    }
-                    break;
-                case FINDMINMAX: 
-                    
-                    //sequence pour aller au max puis au min et de déterminer
-                    //les pwm Min et Max du servo
-                    //----------------------------------------------------------
-                    //find max
-					// Principe : on commande un delta déplacement, on laisse
-					//   compter et on regarde si le compteur du capteur optique est égal
-					//   à ref +/- une petite erreur autorisée
-					//   Si oui alors on recommence sinon on doit etre en butee
-                    for (i=0;i<NBRCYCLE_AR;i=i+1){
-                        compteur=compteurRef;
-                        amplitude=0;
-						Serial.print(F("Cycle recherche MAX n ") );Serial.println(1+i);
-                        while (abs(compteurRef-compteur)<ERREURCOMPTAGE) {
-                            
-                            Serial.print(F("M+....."));
-                            compteur=0;
-                    
-                            leServo.setObjectif(leServo.getObjectif()+delta);
-                            sleep(TEMPOSLEEP);
-							if (leServo.getType())
-							{
-							Serial.print(F(" PWM =")); Serial.print(leServo.getObjectif());
-                            Serial.print(F("usec,  cmptr fourche optique=")); Serial.print(compteur);	
-							}
-							else
-							{
-							Serial.print(F(" quantum sur 4096 =")); Serial.print(leServo.getObjectif());
-                            Serial.print(F("usec,  cmptr fourche optique=")); Serial.print(compteur);	
-							}
-							
-                            amplitude=amplitude+abs(compteur);
-                            Serial.print(F(" amplitude fourche optique="));Serial.println(amplitude);
-                        }
-                        amplitude=amplitude-abs(compteur)	;
-                    
-                        resultatMaxServo[i]= leServo.getObjectif()-delta;
-                        Serial.print(F(" Amplitude max fourche optique par rapport au milieu retenue =") );Serial.println(amplitude);
-						if (leServo.getType())
-							{
-							Serial.print(F(" PWM Max retenue =")); Serial.print(resultatMaxServo[i]);
-                            Serial.println(F("usec"))	
-							}
-							else
-							{
-							Serial.println(F(" quantum Max sur 4096 retenue=")); Serial.print(resultatMaxServo[i]);
-                            	
-							}
-                    
-					leServo.setObjectif(leServo.getMilieu());
-                    Serial.println("retourneMilieu");
-                    sleep(TEMPOSLEEP);
-                    //----------------------------------------------------------
-                    
-                        compteur=-compteurRef;
-						Serial.print(F("Cycle recherche MIN n ") );Serial.println(i+1);
-                        while (abs(-compteurRef-compteur)<ERREURCOMPTAGE){
-                        // inversion du signe de compteur ref car on change de sens
-                        // de rotation (par rapport au sens de recherche de compteur ref)
-                                                   
-                            Serial.print(F("M-......"));
-                            compteur=0;
-                    
-                            leServo.setObjectif(leServo.getObjectif()-delta);
-                            sleep(TEMPOSLEEP); 
-                            if (leServo.getType())
-							{
-							Serial.print(F(" PWM =")); Serial.print(leServo.getObjectif());
-                            Serial.print(F("usec,  cmptr fourche optique=")); Serial.print(compteur);	
-							}
-							else
-							{
-							Serial.print(F(" quantum sur 4096 =")); Serial.print(leServo.getObjectif());
-                            Serial.print(F("usec,  cmptr fourche optique=")); Serial.print(compteur);	
-							}
-                            amplitude=amplitude+abs(compteur);
-                            Serial.print(F(" amplitude="));Serial.println(amplitude);
-                        }
-                        amplitude=amplitude-abs(compteur)	;
-                        resultatAmplitude[i] = amplitude ;
-                        resultatMinServo[i]= leServo.getObjectif()+delta;
-						leServo.setObjectif(leServo.getObjectif()+delta);
-                        
-						
-						Serial.print(F(" Amplitude min fourche optique par rapport au milieu retenue =") );Serial.println(amplitude);
-						if (leServo.getType())
-							{
-							Serial.print(F(" PWM Min retenue =")); Serial.print(resultatMaxServo[i]);
-                            Serial.println(F("usec"))	
-							}
-							else
-							{
-							Serial.println(F(" quantum Min sur 4096 retenue=")); Serial.print(resultatMaxServo[i]);
-                            	
-							}
-						
-						
-						leServo.setObjectif(leServo.getMilieu());
-                    
-						Serial.println("retourneMilieu");
-						sleep(TEMPOSLEEP);
-						Serial.println(F("*************************************") );
-                    }
-
-                    Serial.println(F("=============") );
-					leServo.setMax( (int) moyenne( NBRCYCLE_AR, resultatMaxServo ) );
-                    
-					if (leServo.getType())
-							{
-							Serial.print("PWM MAX retenue vue l'ensemble des cycles ="); Serial.print(leServo.getMax());
-							Serial.print(F(" usec d'angle   (ecart type : "));
-							}
-							else
-							{
-							Serial.print("Quantum MAX retenue vue l'ensemble des cycles ="); Serial.print(leServo.getMax());
-							Serial.print(F(" sur 4096   (ecart type : "));	
-							}
-					
-					
-					
-					
-                    Serial.println(ecartType(NBRCYCLE_AR,resultatMaxServo));
-					Serial.print(F(")"));
-					leServo.setMin((int) moyenne( NBRCYCLE_AR, resultatMinServo ));
-					
-					
-					if (leServo.getType())
-							{
-							Serial.print("PWM Min retenue vue l'ensemble des cycles ="); Serial.print(leServo.getMin());
-							Serial.print(F(" usec d'angle   (ecart type : "));
-							}
-							else
-							{
-							Serial.print("Quantum Min retenue vue l'ensemble des cycles ="); Serial.print(leServo.getMin());
-							Serial.print(F(" sur 4096   (ecart type : "));	
-							}
-					
-					
-					
-					
-                   			
-					
-                    Serial.println(ecartType(NBRCYCLE_AR,resultatMinServo));
-                    Serial.print(F(")"));
-                    
-                    
-                    //----------------------------------------------------------
-
-                    //Amplitude angulaire exprimee en unite de roue codeuse
-					//amplitude = moyenne( NBRCYCLE_AR, resultatAmplitudeMax );
-                    amplitude = moyenne( NBRCYCLE_AR, resultatAmplitude );
-					
-					Serial.print(F("amplitude moyenne retenue vue par la fourche optique = ") );Serial.print(amplitude);
-					Serial.print(F(" impulsions (ecart type : "));
-                    Serial.println(ecartType(NBRCYCLE_AR,resultatAmplitude));
-					Serial.print(F(" )"));
-					
-                    Serial.println(F("=============") );
-					
-                    leServo.setObjectif(leServo.getMin());
-					sleep(TEMPOSLEEP);
-					Serial.println("en ce moment le servo est au min et va faire grande course plusieurs fois de suite pour déterminer la vitesse du servo");
-					//----------------------------------------------------------
-                    //séquence pour mesurer une vitesse et amplitude moyenne
-
-                    //(10 cycles d'aller et retour de min à max
-                    //et enregistrement systématique des mesures)
-					//chaque cycle s'arrete quand le servo atteint amplitude moyenne à DEP_MIN_STAT près
-                    for (i=0;i<NBRCYCLE_AR;i=i+1)
-                        {
-                            compteur=0;
-                            tempsMesureVitesse=millis();
-                            //Serial.print("tempsMesureVitesse=");
-                            //Serial.println(tempsMesureVitesse);
-                            // Mesure de min vers max
-                            leServo.setObjectif(leServo.getMax());
-                            //sleep(TEMPOSLEEP); inutile maintenant car on s'arrette quand compteur suffisament incrémenté'
-                            //Serial.print("cmpt="); Serial.println(compteur);
-                            while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
-                                {
-                                   /*  Serial.print("yop");
-                                    Serial.print(" cmpt=");
-                                    Serial.println(compteur); */
-                                    sleep(TEMPO_STAT);
-                                }
-                            
-                            resultatTempsMax[i]=millis()-tempsMesureVitesse;//-\
-                                                    TEMPO_STAT;
-                            Serial.print(F("Cycle ")); Serial.print(i);
-                            Serial.print(F(" vers le max, temps= ")); Serial.print(resultatTempsMax[i]);
-							Serial.println(F(" ms "));
-                        
-                            compteur=0;
-                            
-                            tempsMesureVitesse=millis();
-                            // Mesure de max vers min
-                             //Serial.print("tempsMesureVitesse=");
-                            //Serial.println(tempsMesureVitesse);
-                            leServo.setObjectif(leServo.getMin());
-                            //sleep(TEMPOSLEEP);
-                            Serial.print("cmpt="); Serial.println(compteur);
-                            while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
-                                {
-                                    
-                                    /*Serial.print("yup ");
-                                    Serial.print("cmpt=");
-                                    Serial.println(compteur);*/
-                                    sleep(TEMPO_STAT);
-                                }
-
-                            
-							
-                            resultatTempsMin[i]=millis()-tempsMesureVitesse;//-TEMPO_STAT;
-                            Serial.print(F("Cycle ")); Serial.print(i);
-                            Serial.print(F(" vers le max, temps= ")); Serial.print(resultatTempsMin[i]);
-							Serial.println(F(" ms "));
-							
-							Serial.println(F("********************************** "));
-                            
-							
-                        } //fin for NBCYCLES
-   
-         
-					sleep(TEMPO_STAT);
-					compteur=0;
-                    leServo.setObjectif(leServo.getMax());
-					etatCalibrateur=DISPRESULT;
-					Serial.println();
-                    Serial.println();
-					if (compteur<0)
-						{
-							Serial.println(F("Le servo tourne dans le sens direct "));
-							
-						}
-					else
-					{
-					Serial.println(F("Le servo tourne dans le sens indirect "));	
-					}
-					
-                  
-                
-
-                case DISPRESULT:  
-                    
-                    leServo.setObjectif(leServo.getMilieu());
-					if (leServo.getType())
-					{
-					Serial.println(F(" Servo CLASSIQUE"));	
-					}
-					else
-					{
-						Serial.println(F(" Servo ADAFRUIT"));
-					}
-					
-                    
-					
-					
-					Serial.print(F(" Dans le sens croissant, "));
-                   
-                    Serial.print(F("le max est atteint en un temps moyen de "));
-                    Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMax));
-                    Serial.print(F(" ms (ecart type : "));
-                    Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMax));
-                    Serial.println(F(" ms)"));
-                    Serial.print(F(" Dans le sens decroissant , "));
-                    //Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitude));
-                    //Serial.print(F("impulsions (Ecart type : "));
-                    //Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitude));
-                    Serial.print(F("le min est atteint en un temps moyen de "));
-                    Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMin));
-                    Serial.print(F(" ms (ecart type : "));
-                    Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMin));
-                    Serial.println(F(" ms)"));
-                    //potence.setObjectif(potence.getMax());
-					Serial.println();
-                    Serial.println(F("si nouveau servo : doubleClic, si changement mode clic"));
-                    etatCalibrateur=WAITCLIC2;               
-                    break;
-                   
-                case WAITCLIC2:  
-                    if (boutonP.hasBeenClicked())
-                        {
-                            boutonP.acquit();
-                            etatCalibrateur=SWEEPTOMIN;
-                            affichage.affiche(SWEEPTOMIN);
-                            leServo.setObjectif(leServo.getMin());
-              Serial.print(F("bouger le potar modifie la vitesse, double click la sauve en prom "));
-                        } 
-                    if (boutonP.hasBeenDoubleClicked())
-                        {
-                            boutonP.acquit();
-                            etatCalibrateur=MESREFPULSE;
-                            leServo.setType(leServo.getType());
-							leServo.setVitesse(VITESSEMAXSERVO);
-                            leServo.setObjectif(leServo.getMilieu());
-                            //potence.setObjectif(bonnePositionPotence);
-                            sleep(TEMPOSLEEP*3);
-                        }    
-                    break ;    
-                      
-                case SWEEPTOMIN:
-                    if (leServo.isMin())
-                        {
-                            etatCalibrateur=SWEEPTOMAX;
-                            leServo.setObjectif(leServo.getMax());
-                        }
-                    if (boutonP.hasBeenClicked())
-                        {
-                            boutonP.acquit();
-                            lePotar.acquit();
-                            etatCalibrateur=POTAR;
-                            affichage.affiche(POTAR);
-                        }
-                    if (lePotar.hasBeenMovedALot())
-                        {
-                         //Serial.println("plip");
-                          leServo.setVitesse(map(lePotar.getValue()\
-                                                ,0,1023,0,VITESSEMAXSERVO));
-                        }
-                    if (boutonP.hasBeenDoubleClicked())
-                        {
-                            boutonP.acquit();
-                            lePotar.getValue();
-                            //enregistre en eeprom
-                            EEPROM.put(ADRESSE_EEPROM, map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
-                            Serial.print(F("sauver en prom vitesse = "));
-                            Serial.print(  map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
-                            Serial.print(F("microsec de PWM par seconde"));
-                        }
-           
-                    break;
-        
-                case SWEEPTOMAX:
-                    if (leServo.isMax())
-                        {
-                            etatCalibrateur=SWEEPTOMIN;
-                            leServo.setObjectif(leServo.getMin());
-                        }
-                    if (boutonP.hasBeenClicked())
-                        {
-                            boutonP.acquit();
-                            lePotar.acquit();
-                            etatCalibrateur=POTAR;
-                            affichage.affiche(POTAR);
-                        }
-                    if (lePotar.hasBeenMovedALot())
-                        {
-                            //Serial.println("plup");
-                            leServo.setVitesse(map(lePotar.getValue(),\
-                                                    0,1023,0,VITESSEMAXSERVO));
-                        }
-                    if (boutonP.hasBeenDoubleClicked())
-                        {
-                            boutonP.acquit();
-                            lePotar.getValue();
-                            //enregistre en eeprom
-                            EEPROM.put(ADRESSE_EEPROM,\
-                                        map(lePotar.getValue(),0,1023,0,\
-                                        VITESSEMAXSERVO));
-                            Serial.print(F("sauver en prom vitesse = "));
-                            Serial.print( map(lePotar.getValue(),\
-                                                0,1023,0,VITESSEMAXSERVO));
-                            Serial.print(F("microsec de PWM par seconde"));
-                        }
-                    break;
-
-                case POTAR:
-                    int temp;
-                    int potarVal;
-                    potarVal=lePotar.getValue();
-                    temp=map(potarVal,0,1023,leServo.getMin(),leServo.getMax());   
-                    leServo.setObjectif(temp);
-                    if (boutonP.hasBeenClicked())
-                        {
-                            boutonP.acquit();
-                            etatCalibrateur=4;
-                            affichage.affiche(4);
-                            //leServo.setObjectif(leServo.getMilieu());
-                        }
-                    break;
-        
-                case MILIEU:
-                    leServo.setObjectif(leServo.getMilieu());
-                    if (boutonP.hasBeenClicked())
-                        {
-                            boutonP.acquit();
-                            etatCalibrateur=1;
-                            affichage.affiche(1);
-                        }
-                    break;
-               
-                case 8:
-                    break;
-            }
-
-    
-    
-    
+    //Test de changement de servo moteur ADAFRUIT ou CLASSIQUE
+    if (boutonP.hasBeenLongClicked()){ 
+        dateChangeServo=millis();
+        changeTypeServo=true;
+        if (leServo.getType()){
+            leServo.setType(false);
+            delta=DELTAADAFRUIT;
+            affichage.affiche(AFFICHEADAFRUIT);
+            spl( "servo de type Adafruit" );
+        } else {
+            leServo.setType(true);
+            affichage.affiche(AFFICHECLASSIQUE);
+            spl( "servo de type Classique" );
+            delta=DELTACLASSIQUE;
+        }
+        //sleep( 3000);
+        boutonP.acquit();   
     }
+ 
+    //Affichage du nouveau type de servo moteur pendant 3s
+    //Sur l'afficheur 7 segement
+    if (millis()>dateChangeServo+3000 && changeTypeServo){
+        affichage.affiche(etatCalibrateur);
+        changeTypeServo=false;
+    }
+
+    switch (etatCalibrateur){
+        case USB :
+            spl("Double Clic pour proceder a mesure via");
+            spl(" USB, sinon simple clic change de mode");                              
+            etatCalibrateur=ETALORSWEEP;
+            break;
+            
+        //Choix mode etalonnage ou sweep
+        case ETALORSWEEP :
+            if (boutonP.hasBeenClicked()){
+                boutonP.acquit();
+                etatCalibrateur=SWEEPTOMIN;
+                affichage.affiche(SWEEPTOMIN);
+                leServo.setObjectif(leServo.getMin());
+                lePotar.acquit();
+            }
+         
+            if (boutonP.hasBeenDoubleClicked()){
+                boutonP.acquit();
+                leServo.setVitesse(VITESSEMAXSERVO);
+                spf("Vitesse = ");
+                Serial.print(VITESSEMAXSERVO);
+                spf(", tempo stat = ");
+                Serial.println(TEMPO_STAT);
+                leServo.setObjectif(leServo.getMilieu());
+            //pour etre certain qu'on part du milieu et que le servo 
+            //n'est pas n'importe ou suite a des manip de type sweep
+            //ou potar par ex
+                //etatCalibrateur=LECTURE_OU_ECRITURE_EEEPROM;
+                etatCalibrateur=MESREFPULSE;
+            } 
+            break;   
+
+        case MESREFPULSE:
+        //mesure des impulsions  de reference en provenance
+        //du capteur optique sur une rotation
+        //d'un petit delta (choisi arbitrairement) 
+        //repetee X fois pour plus de certitude
+            compteurRef=0;
+            compteur=0;
+            for (i=0;i<NBRCYCLE_AR;i=i+1){
+                //mesure milieu+delta, tempo, get_compteur
+                //milieu, tempo, raz_compteur
+                spf("iteration de mesure de ref=");
+                leServo.setObjectif(leServo.getMilieu()+delta);
+                sleep(TEMPOSLEEP);
+                mesureRef[i]=compteur;
+                leServo.setObjectif(leServo.getMilieu());
+                sleep(TEMPOSLEEP);
+                compteur=0;
+                spl(mesureRef[i]);
+            }
+            etatCalibrateur=FINDMINMAX;
+            //Affichage de ce resultat
+            compteurRef=moyenne(NBRCYCLE_AR,mesureRef);
+            spf(" SUPER compteurRefMoyenne vue a la fourche optique = ");
+            sp(compteurRef);
+            spf(" ( ecart type : ");
+            sp(ecartType(NBRCYCLE_AR,mesureRef));
+            spfl(" ) ");
+            spl();
+            // 2 petites vérification ref <> 0 et ref pqs trop petit
+            if (compteurRef==0){
+                spfl("PB : compteur Ref=0 aucune impulsion fourche optique detectee");
+                spfl("retour au début de procédure");
+                etatCalibrateur=USB;
+            }
+            if (ERREURCOMPTAGE*3>abs(compteurRef)){
+                Serial.println(F("ce serait bien que la marge d'erreur soit de l'ordre de 30% de la mesure de reference"));
+                Serial.println(F("je vais faire autre chose.... Programme a recompiler"));
+                Serial.println(F("modifier macro ERREURCOMPTAGE et DELTAADAFRUIT ou DELTACLASSIQUE"));
+                etatCalibrateur=POTAR;
+                affichage.affiche(POTAR);
+            }
+            break;
+        case FINDMINMAX: 
+            //sequence pour aller au max puis au min et de déterminer
+            //les pwm Min et Max du servo
+            //----------------------------------------------------------
+            //find max
+            // Principe : on commande un delta déplacement, on laisse
+            //   compter et on regarde si le compteur du capteur optique est égal
+            //   à ref +/- une petite erreur autorisée
+            //   Si oui alors on recommence sinon on doit etre en butee
+            for (i=0;i<NBRCYCLE_AR;i=i+1){
+                compteur=compteurRef;
+                amplitude=0;
+                spf("Cycle recherche MAX n " );spl(1+i);
+                while (abs(compteurRef-compteur)<ERREURCOMPTAGE) {  
+                    spf("M+.....");
+                    compteur=0;
+                    leServo.setObjectif(leServo.getObjectif()+delta);
+                    sleep(TEMPOSLEEP);
+                    if (leServo.getType()){
+                        spf(" PWM = "); sp(leServo.getObjectif());
+                        spf(" usec,  cmptr fourche optique="); sp(compteur);	
+                    } else {
+                        spf(" pwmADF sur 4096 = "); sp(leServo.getObjectif());
+                        spf(", fourche optique : valeur instantanee = "); sp(compteur);	
+                    }
+                    amplitude=amplitude+abs(compteur);
+                    spf(", valeur cumulee = ");spl(amplitude);
+                }
+                amplitude=amplitude-abs(compteur)	;
+            
+                resultatMaxServo[i]= leServo.getObjectif()-delta;
+                spf(" Amplitude max fourche optique par rapport au milieu retenue = ");
+                spl(amplitude);
+                if (leServo.getType()){
+                    spf(" PWM Max retenue = ");
+                    sp(resultatMaxServo[i]);
+                    spf("usec");	
+                } else {
+                    spf(" Valeur max ADF sur 4096 retenue = ");
+                    spl(resultatMaxServo[i]);	
+                }
+                leServo.setObjectif(leServo.getMilieu());
+                spfl("Retourne au milieu");
+                sleep(TEMPOSLEEP);
+                //----------------------------------------------------------
+                compteur=-compteurRef;
+                spf("Cycle recherche MIN n " );spl(i+1);
+                while (abs(-compteurRef-compteur)<ERREURCOMPTAGE){
+                // inversion du signe de compteur ref car on change de sens
+                // de rotation (par rapport au sens de recherche de compteur ref)
+                                           
+                    spf("M-......");
+                    compteur=0;
+                    leServo.setObjectif(leServo.getObjectif()-delta);
+                    sleep(TEMPOSLEEP); 
+                    if (leServo.getType()){
+                        spf(" PWM ="); sp(leServo.getObjectif());
+                        spf("usec,  cmptr fourche optique= "); sp(compteur);	
+                    } else {
+                        spf(" quantum sur 4096 ="); sp(leServo.getObjectif());
+                        spf("usec,  cmptr fourche optique="); spl(compteur);	
+                    }
+                    amplitude=amplitude+abs(compteur);
+                    spf(" amplitude= ");spl(amplitude);
+                }
+                amplitude=amplitude-abs(compteur)	;
+                resultatAmplitude[i] = amplitude ;
+                resultatMinServo[i]= leServo.getObjectif()+delta;
+                leServo.setObjectif(leServo.getObjectif()+delta);
+                spf(" Amplitude min fourche optique par rapport au milieu retenue = " );
+                spl(amplitude);
+                if (leServo.getType()){
+                    spf(" PWM Min retenue = "); sp(resultatMaxServo[i]);
+                    spl("usec");	
+                } else {
+                    spf(" Quantum min ADF sur 4096 retenu = ");
+                    spl(resultatMaxServo[i]);
+                }
+                leServo.setObjectif(leServo.getMilieu());
+                spfl("Retourne au milieu");
+                sleep(TEMPOSLEEP);
+                spfl("*************************************") ;
+            }
+            spfl("=============");
+            leServo.setMax( (int) moyenne( NBRCYCLE_AR, resultatMaxServo ) );
+            if (leServo.getType()){
+                spf("PWM MAX retenue vue l'ensemble des cycles = ");
+                sp(leServo.getMax());
+                spf(" usec d'angle   (ecart type : ");
+            } else {
+                sp("Quantum MAX retenue vue l'ensemble des cycles =");
+                sp(leServo.getMax());
+                spf(" sur 4096   (ecart type : ");	
+            }
+            sp(ecartType(NBRCYCLE_AR,resultatMaxServo));
+            spfl(")");
+            leServo.setMin((int) moyenne( NBRCYCLE_AR, resultatMinServo ));
+            if (leServo.getType()){
+                Serial.print("PWM Min retenue vue l'ensemble des cycles ="); Serial.print(leServo.getMin());
+                Serial.print(F(" usec d'angle   (ecart type : "));
+            } else {
+                spf("Quantum Min retenue vue l'ensemble des cycles =");
+                sp(leServo.getMin());
+                spf(" sur 4096   (ecart type : ");	
+            }
+            sp(ecartType(NBRCYCLE_AR,resultatMinServo));
+            spfl(")");
+
+            //----------------------------------------------------------
+            //Amplitude angulaire exprimee en unite de roue codeuse
+            //amplitude = moyenne( NBRCYCLE_AR, resultatAmplitudeMax );
+            amplitude = moyenne( NBRCYCLE_AR, resultatAmplitude );
+            spf("Amplitude moyenne retenue vue par la fourche optique = ");
+            sp(amplitude);
+            spf(" impulsions (ecart type : ");
+            sp(ecartType(NBRCYCLE_AR,resultatAmplitude));
+            spfl(" )");
+            spfl("=============");
+            
+            leServo.setObjectif(leServo.getMin());
+            sleep(TEMPOSLEEP);
+            Serial.println("en ce moment le servo est au min et va faire grande course plusieurs fois de suite pour déterminer la vitesse du servo");
+            //----------------------------------------------------------
+            //séquence pour mesurer une vitesse et amplitude moyenne
+
+            //(10 cycles d'aller et retour de min à max
+            //et enregistrement systématique des mesures)
+            //chaque cycle s'arrete quand le servo atteint amplitude moyenne à DEP_MIN_STAT près
+            for (i=0;i<NBRCYCLE_AR;i=i+1)
+                {
+                    compteur=0;
+                    tempsMesureVitesse=millis();
+                    //Serial.print("tempsMesureVitesse=");
+                    //Serial.println(tempsMesureVitesse);
+                    // Mesure de min vers max
+                    leServo.setObjectif(leServo.getMax());
+                    //sleep(TEMPOSLEEP); inutile maintenant car on s'arrette quand compteur suffisament incrémenté'
+                    //Serial.print("cmpt="); Serial.println(compteur);
+                    while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
+                        {
+                           /*  Serial.print("yop");
+                            Serial.print(" cmpt=");
+                            Serial.println(compteur); */
+                            sleep(TEMPO_STAT);
+                        }
+                    
+                    resultatTempsMax[i]=millis()-tempsMesureVitesse;//-\
+                                            TEMPO_STAT;
+                    Serial.print(F("Cycle ")); Serial.print(i);
+                    Serial.print(F(" vers le max, temps= ")); Serial.print(resultatTempsMax[i]);
+                    Serial.println(F(" ms "));
+                
+                    compteur=0;
+                    
+                    tempsMesureVitesse=millis();
+                    // Mesure de max vers min
+                     //Serial.print("tempsMesureVitesse=");
+                    //Serial.println(tempsMesureVitesse);
+                    leServo.setObjectif(leServo.getMin());
+                    //sleep(TEMPOSLEEP);
+                    Serial.print("cmpt="); Serial.println(compteur);
+                    while (abs(compteur)<abs(amplitude)-DEP_MINI_STAT)
+                        {
+                            
+                            /*Serial.print("yup ");
+                            Serial.print("cmpt=");
+                            Serial.println(compteur);*/
+                            sleep(TEMPO_STAT);
+                        }
+
+                    
+                    
+                    resultatTempsMin[i]=millis()-tempsMesureVitesse;//-TEMPO_STAT;
+                    Serial.print(F("Cycle ")); Serial.print(i);
+                    Serial.print(F(" vers le max, temps= ")); Serial.print(resultatTempsMin[i]);
+                    Serial.println(F(" ms "));
+                    
+                    Serial.println(F("********************************** "));
+                    
+                    
+                } //fin for NBCYCLES
+
+ 
+            sleep(TEMPO_STAT);
+            compteur=0;
+            leServo.setObjectif(leServo.getMax());
+            etatCalibrateur=DISPRESULT;
+            Serial.println();
+            Serial.println();
+            if (compteur<0){
+                spfl("Le servo tourne dans le sens direct ");   
+            } else {
+                spfl("Le servo tourne dans le sens indirect ");	
+            }
+
+        case DISPRESULT:  
+            
+            leServo.setObjectif(leServo.getMilieu());
+            if (leServo.getType()) {
+                spfl(" Servo CLASSIQUE");	
+            } else {
+                spfl(" Servo ADAFRUIT");
+            }
+            spf(" Dans le sens croissant, ");
+            spf("le max est atteint en un temps moyen de ");
+            sp(moyenne(NBRCYCLE_AR,resultatTempsMax));
+            spf(" ms (ecart type : ");
+            sp(ecartType(NBRCYCLE_AR,resultatTempsMax));
+            spfl(" ms)");
+            spf(" Dans le sens decroissant , ");
+            //Serial.print(moyenne(NBRCYCLE_AR,resultatAmplitude));
+            //Serial.print(F("impulsions (Ecart type : "));
+            //Serial.print(ecartType(NBRCYCLE_AR,resultatAmplitude));
+            Serial.print(F("le min est atteint en un temps moyen de "));
+            Serial.print(moyenne(NBRCYCLE_AR,resultatTempsMin));
+            Serial.print(F(" ms (ecart type : "));
+            Serial.print(ecartType(NBRCYCLE_AR,resultatTempsMin));
+            Serial.println(F(" ms)"));
+            //potence.setObjectif(potence.getMax());
+            Serial.println();
+            spf("si nouveau servo : doubleClic, si changement mode clic");
+            etatCalibrateur=WAITCLIC2;               
+            break;
+           
+        case WAITCLIC2:  
+            if (boutonP.hasBeenClicked()){
+                boutonP.acquit();
+                etatCalibrateur=SWEEPTOMIN;
+                affichage.affiche(SWEEPTOMIN);
+                leServo.setObjectif(leServo.getMin());
+                spf("bouger le potar modifie la vitesse, ");
+                spfl("double click la sauve en prom ");
+            } 
+            if (boutonP.hasBeenDoubleClicked()){
+                boutonP.acquit();
+                etatCalibrateur=MESREFPULSE;
+                leServo.setType(leServo.getType());
+                leServo.setVitesse(VITESSEMAXSERVO);
+                leServo.setObjectif(leServo.getMilieu());
+                //potence.setObjectif(bonnePositionPotence);
+                sleep(TEMPOSLEEP*3);
+            }    
+            break ;    
+              
+        case SWEEPTOMIN:
+            if (leServo.isMin())
+                {
+                    etatCalibrateur=SWEEPTOMAX;
+                    leServo.setObjectif(leServo.getMax());
+                }
+            if (boutonP.hasBeenClicked())
+                {
+                    boutonP.acquit();
+                    lePotar.acquit();
+                    etatCalibrateur=POTAR;
+                    affichage.affiche(POTAR);
+                }
+            if (lePotar.hasBeenMovedALot()){
+             //Serial.println("plip");
+              leServo.setVitesse(map(lePotar.getValue()\
+                                    ,0,1023,0,VITESSEMAXSERVO));
+            }
+            if (boutonP.hasBeenDoubleClicked()){
+                boutonP.acquit();
+                lePotar.getValue();
+                //enregistre en eeprom
+                EEPROM.put(ADRESSE_EEPROM, map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
+                Serial.print(F("sauver en prom vitesse = "));
+                Serial.print(  map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
+                Serial.print(F("microsec de PWM par seconde"));
+            }
+            break;
+
+        case SWEEPTOMAX:
+            if (leServo.isMax()){
+                etatCalibrateur=SWEEPTOMIN;
+                leServo.setObjectif(leServo.getMin());
+            }
+            if (boutonP.hasBeenClicked()){
+                boutonP.acquit();
+                lePotar.acquit();
+                etatCalibrateur=POTAR;
+                affichage.affiche(POTAR);
+            }
+            if (lePotar.hasBeenMovedALot()){
+                //Serial.println("plup");
+                leServo.setVitesse(map(lePotar.getValue(),\
+                                        0,1023,0,VITESSEMAXSERVO));
+            }
+            if (boutonP.hasBeenDoubleClicked()){
+                boutonP.acquit();
+                lePotar.getValue();
+                //enregistre en eeprom
+                EEPROM.put(ADRESSE_EEPROM,\
+                            map(lePotar.getValue(),0,1023,0,\
+                            VITESSEMAXSERVO));
+                spf("sauver en prom vitesse = ");
+                sp( map(lePotar.getValue(),\
+                                    0,1023,0,VITESSEMAXSERVO));
+                spf("microsec de PWM par seconde");
+            }
+            break;
+
+        case POTAR:
+            int temp;
+            int potarVal;
+            potarVal=lePotar.getValue();
+            temp=map(potarVal,0,1023,leServo.getMin(),leServo.getMax());   
+            leServo.setObjectif(temp);
+            if (boutonP.hasBeenClicked()){
+                boutonP.acquit();
+                etatCalibrateur=4;
+                affichage.affiche(4);
+                //leServo.setObjectif(leServo.getMilieu());
+            }
+            break;
+
+        case MILIEU:
+            leServo.setObjectif(leServo.getMilieu());
+            if (boutonP.hasBeenClicked()) {
+                boutonP.acquit();
+                etatCalibrateur=1;
+                affichage.affiche(1);
+            }
+            break;
+       
+        case 8:
+            break;
+    } //fin switch/case etatCalibrateur
+
+} //fin loop tache reflechi
 
 
           
-void setup() 
-{ 
-  int vitesseDinit;    
-  pinMode(PINVOIEB, INPUT);      
+void setup(){ 
+    int vitesseDinit;    
+    pinMode(PINVOIEB, INPUT);      
     Serial.begin(57600);
 
-  lePotar.init();
+    lePotar.init();
     leServo.setType(true);
-	delta=DELTACLASSIQUE;
-  EEPROM.get(ADRESSE_EEPROM, vitesseDinit);
-
-  if (vitesseDinit<=VITESSEMAXSERVO && vitesseDinit>=0)
-    {leServo.setVitesse(vitesseDinit);
-    Serial.print("vitesse EEPROM=");
-	Serial.print(vitesseDinit);
-   
+    delta=DELTACLASSIQUE;
+	
+    spfl("Calibrateur de Servo moteur VOR005");
+    spfl("  Pour changer entre classique et ADAFRUIT, a tout moment");
+    spfl("  appuis long superieur a 2s.");
+    spfl("Desole pour les accents.");
+    spfl("CC-0 : 2013-2017 VoLAB + Electrolab");
+	
+    EEPROM.get(ADRESSE_EEPROM, vitesseDinit);
+    if (vitesseDinit<=VITESSEMAXSERVO && vitesseDinit>=0){
+        leServo.setVitesse(vitesseDinit);
+        sp("vitesse EEPROM=");
+        spl(vitesseDinit);
+    } else {
+        spl("emploi de la vitesse 300");
+        leServo.setVitesse(300);
     }
-   else
-   {
-    Serial.println("emploi de la vitesse 300");
-    leServo.setVitesse(300);
-   }
-  
+
     Wire.begin();
 
-    Serial.println("hello");
-    
-	mySCoop.start();
-	
-    temp=millis();
+
+    mySCoop.start();
+
+    //temp=millis();
     //etatCalibrateur=3; fait dans l'init de la variable
     affichage.affiche(POTAR);
     attachInterrupt(0, updatePulseCompteur, RISING ); // Int0= la pin N°2 sur un UNO
 }
- void updatePulseCompteur()
-{ 
-    if (digitalRead(PINVOIEB))
-		{compteur++;       }
-	else
-		{compteur--;}
 
+//------------------------------------------------------------------------------
+//Fonction de mise a jour du compteur d'impulsion de la roue codeuse
+//routine de traitement d'interruption
+//------------------------------------------------------------------------------
+ void updatePulseCompteur(){ 
+    if (digitalRead(PINVOIEB)) compteur++;
+	else compteur--;
 }     
 
+//------------------------------------------------------------------------------
 int freeRam () {
     extern int __heap_start, *__brkval;
     int v;
     return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
 }
+//------------------------------------------------------------------------------
 
-         
-void loop ()
-{
-    	mySCoop.sleep(1);
+void loop (){
+    mySCoop.sleep(1);
     /*
 	if (millis()>5000+temp)
         {
@@ -817,6 +744,5 @@ void loop ()
             Serial.println(freeRam());
         }
 	*/
-	
 }
 
