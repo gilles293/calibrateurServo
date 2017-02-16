@@ -55,7 +55,7 @@ void bouton::refreshBouton()
             { 
               _etat=0;
               _longClicked=true;
-              Serial.println("long clic");
+              //Serial.println("long clic");
               break;
               }  
               break;
@@ -64,7 +64,7 @@ void bouton::refreshBouton()
           //Serial.println("case2");
           if (digitalRead(_boutonPin)==HIGH && millis()>_finDernierAppui+200)
             {
-              Serial.println("CLIC");
+              //Serial.println("CLIC");
               _etat=0;
               _clicked=true;
               break;
@@ -84,7 +84,7 @@ void bouton::refreshBouton()
              if (digitalRead(_boutonPin)==HIGH )
            
              {
-               Serial.println("double clique");
+               //Serial.println("double clique");
               _etat=0;
               _doubleClicked=true;
               break;

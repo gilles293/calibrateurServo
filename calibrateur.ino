@@ -67,7 +67,7 @@ poursuivre modif code pour delta dynamique en fonction de ADAFRUIT ou CLASSIQUE
 #define ADRESSE_EEPROM 42//position de leeprom ou la valeur de reglage de vitesse est stocké
 #define VITESSEMAXSERVO 4000 // vitesse max d'un servo en microsecond de PWM par seconde
 //cette vitesse doit imperativement etre superieure à la vitesse que
-//peut physiquement atteindre le servo afin que les mesrues de vitesse physique en fin de calibration USB soient justes.
+//peut physiquement atteindre le servo afin que les mesures de vitesse physique en fin de calibration USB soient justes.
 //Par conttre dans la sequense sweep to min sweep to max cette valeur conduit a 
 //empecher le servo d'atteindre le min et le max,
 //il faut reduire la vitesse avec le potar pour que le servo
@@ -613,9 +613,14 @@ defineTask(reflechi,250)
                 lePotar.getValue();
                 //enregistre en eeprom
                 EEPROM.put(ADRESSE_EEPROM, map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
-                Serial.print(F("sauver en prom vitesse = "));
-                Serial.print(  map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
-                Serial.print(F("microsec de PWM par seconde"));
+                spf("sauver en prom vitesse = "));
+                sp(map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
+                if (leServo.getType()){
+                spf("PWM par seconde")
+            } else {
+                spf("pwmADF par seconde");
+                	
+            }
             }
             break;
 
@@ -645,7 +650,14 @@ defineTask(reflechi,250)
                 spf("sauver en prom vitesse = ");
                 sp( map(lePotar.getValue(),\
                                     0,1023,0,VITESSEMAXSERVO));
-                spf("microsec de PWM par seconde");
+                
+				if (leServo.getType()){
+                spf("PWM par seconde")
+            } else {
+                spf("pwmADF par seconde");
+                	
+            }
+				
             }
             break;
 
