@@ -103,7 +103,7 @@ void afficheur::affiche(byte toto)
         _affichageEnCours[1]=0xA4;//
         _affichageEnCours[2]=0x8C;//
         
-       Serial.println(F("USB")); 
+       Serial.println(F("Mode : USB")); 
          
         _numMax =2;       
         break;
@@ -114,7 +114,7 @@ void afficheur::affiche(byte toto)
         _affichageEnCours[2]=0x86;
         _affichageEnCours[3]=0x86;
         _affichageEnCours[4]=0xC2; 
-       Serial.println(F("SWEEP")); 
+       Serial.println(F("Mode : SWEEP")); 
         _numMax =4;       
         break;
      
@@ -125,7 +125,7 @@ void afficheur::affiche(byte toto)
         _affichageEnCours[3]=0xC0;
         _affichageEnCours[4]=0xDE;
         _numMax=4;
-       Serial.println("POtAr"); 
+       Serial.println("Mode Potar"); 
                
         break; 
      
@@ -138,7 +138,7 @@ void afficheur::affiche(byte toto)
         _affichageEnCours[3]=0xF9;
         _affichageEnCours[4]=0x86;//
         _affichageEnCours[5]=0x89;//
-       Serial.println("MILIEU"); 
+       Serial.println("Retour au MILIEU"); 
         
         _numMax =5;       
         break;    
@@ -152,7 +152,7 @@ void afficheur::affiche(byte toto)
         _affichageEnCours[5]=0x89;
         _affichageEnCours[6]=0xF9;
         _affichageEnCours[7]=0x8E;
-       Serial.println("ADAFrUIt"); 
+       Serial.println("servo de type Adafruit"); 
         _numMax =7;       
         break;   
       
@@ -167,7 +167,7 @@ void afficheur::affiche(byte toto)
         _affichageEnCours[6]=0xE0; 
         _affichageEnCours[7]=0x89; 
         _affichageEnCours[8]=0x86; 
-       Serial.println("CLASSIQUE"); 
+       Serial.println("servo de type classique"); 
         
         _numMax =8;
            

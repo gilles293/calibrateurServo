@@ -251,11 +251,11 @@ defineTask(reflechi,250)
             leServo.setType(false);
             delta=DELTAADAFRUIT;
             affichage.affiche(AFFICHEADAFRUIT);
-            spl( "servo de type Adafruit" );
+            //spl( "servo de type Adafruit" ); //JSO 23/2/17 : double emploi avec ligne au dessus
         } else {
             leServo.setType(true);
             affichage.affiche(AFFICHECLASSIQUE);
-            spl( "servo de type Classique" );
+            //spl( "servo de type Classique" ); //JSO 23/2/17 : double emploi avec ligne au dessus
             delta=DELTACLASSIQUE;
         }
         //sleep( 3000);
@@ -447,7 +447,7 @@ defineTask(reflechi,250)
                 sp("PWM Min retenue vue l'ensemble des cycles ="); sp(leServo.getMin());
                 spf(" usec d'angle   (ecart type : ");
             } else {
-                spf("pwmADF Min retenue vue l'ensemble des cycles =");
+                spf("pwmADF Min retenue vue l'ensemble des cycles = ");
                 sp(leServo.getMin());
                 spf(" sur 4096   (ecart type : ");	
             }
@@ -467,7 +467,9 @@ defineTask(reflechi,250)
             
             leServo.setObjectif(leServo.getMin());
             sleep(TEMPOSLEEP);
-            Serial.println("en ce moment le servo est au min et va faire grande course plusieurs fois de suite pour déterminer la vitesse du servo");
+            spfl("Le servo est au min.");
+			spfl("Il va faire grande course plusieurs fois de suite");
+			spfl(" pour determiner sa vitesse.");
             //----------------------------------------------------------
             //séquence pour mesurer une vitesse et amplitude moyenne
 
@@ -613,14 +615,13 @@ defineTask(reflechi,250)
                 lePotar.getValue();
                 //enregistre en eeprom
                 EEPROM.put(ADRESSE_EEPROM, map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
-                spf("sauver en prom vitesse = "));
+                spf("sauver en prom vitesse = ");
                 sp(map(lePotar.getValue(),0,1023,0,VITESSEMAXSERVO));
                 if (leServo.getType()){
-                spf("PWM par seconde")
-            } else {
-                spf("pwmADF par seconde");
-                	
-            }
+					spf("PWM par seconde");
+				} else {
+					spf("pwmADF par seconde");
+				}
             }
             break;
 
@@ -652,12 +653,10 @@ defineTask(reflechi,250)
                                     0,1023,0,VITESSEMAXSERVO));
                 
 				if (leServo.getType()){
-                spf("PWM par seconde")
-            } else {
-                spf("pwmADF par seconde");
-                	
-            }
-				
+					spf("PWM par seconde");
+				} else {
+					spf("pwmADF par seconde");
+				}	
             }
             break;
 
@@ -706,6 +705,7 @@ void setup(){
     spfl("  appuis long superieur a 2s.");
     spfl("Desole pour les accents.");
     spfl("CC-0 : 2013-2017 VoLAB + Electrolab");
+	spfl("Gilles : comment on remet la vitesse par defaut en EEPROM ?");
 	
     EEPROM.get(ADRESSE_EEPROM, vitesseDinit);
     if (vitesseDinit<=VITESSEMAXSERVO && vitesseDinit>=0){

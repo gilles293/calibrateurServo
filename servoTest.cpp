@@ -68,7 +68,7 @@ void servoTest::setType(bool type)
 			_vitesse=100; //JSO : resolution de conflit 3000 to 50
 			_enCours=_milieu+1;
 			_objectif=_milieu;    
-			Serial.println("hehe");
+			//Serial.println("hehe");
 			_carteAda.begin();
 			_carteAda.setPWMFreq(50); 
 		}
