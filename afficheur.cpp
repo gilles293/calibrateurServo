@@ -88,9 +88,9 @@ void afficheur::envoi(byte data)
   
 }
 
-void afficheur::affiche(byte toto)
+void afficheur::affiche(byte choixAffichage)
 {
-  switch (toto)
+  switch (choixAffichage)
     {
     case AFFICHERIEN : // affiche rien
         _affichageEnCours[0]=0xFF;
